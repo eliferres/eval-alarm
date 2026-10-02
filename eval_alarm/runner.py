@@ -9,6 +9,7 @@ model. The command runs in the directory eval-alarm was started from.
 from __future__ import annotations
 
 import datetime
+import hashlib
 import os
 import shlex
 import signal
@@ -88,7 +89,11 @@ def run_suite(suite: Dict[str, Any], settings: Dict[str, Any], prints: Dict[str,
     record to the suite's results.jsonl. The budget has already been
     reserved. A failed call is recorded with its reason and kept out of the
     mean and spread: an outage is not a worse prompt."""
-    answers_dir = os.path.join(ledger.state_dir(), "answers", suite["name"],
+    # The folder name alone is not unique (two projects can both have an
+    # evals/smoke), so a short hash of the suite's real path keeps their
+    # answers apart.
+    where = hashlib.sha256(os.path.realpath(suite["dir"]).encode("utf-8")).hexdigest()[:8]
+    answers_dir = os.path.join(ledger.state_dir(), "answers", f"{suite['name']}-{where}",
                                started.strftime("%Y%m%dT%H%M%S%fZ"))
     os.makedirs(answers_dir, exist_ok=True)
     width = max(len(c["name"]) for c in suite["cases"])

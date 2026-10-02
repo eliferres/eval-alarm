@@ -94,9 +94,20 @@ class TestRun(RunnerCase):
     def test_every_answer_is_kept_on_disk(self) -> None:
         self.answer("positive", "negative")
         self.run_suites([make_suite(self.root)], runs=1)
-        kept = os.path.join(self.root, "state", "answers", "sentiment")
+        (suite_dir,) = os.listdir(os.path.join(self.root, "state", "answers"))
+        kept = os.path.join(self.root, "state", "answers", suite_dir)
         (stamp,) = os.listdir(kept)
         self.assertEqual(sorted(os.listdir(os.path.join(kept, stamp))), ["praise-r1.txt", "refund-r1.txt"])
+
+    def test_two_suites_with_one_name_keep_separate_answers(self) -> None:
+        self.answer("positive", "negative", "positive", "negative")
+        a = make_suite(os.path.join(self.root, "a"))
+        b = make_suite(os.path.join(self.root, "b"))
+        self.run_suites([a, b], runs=1)
+        kept = os.path.join(self.root, "state", "answers")
+        folders = sorted(os.listdir(kept))
+        self.assertEqual(len(folders), 2, folders)
+        self.assertTrue(all(f.startswith("sentiment-") for f in folders))
 
     def test_the_record_carries_the_covered_files(self) -> None:
         write(os.path.join(self.root, "prompts", "p.md"), "Label: {{case}}")

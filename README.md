@@ -109,7 +109,7 @@ eval-alarm verify evals/*/ && eval-alarm check evals/*/
 | Environment | Default | Holds |
 |---|---|---|
 | `EVAL_ALARM_BUDGET` | 100 | model calls allowed per rolling seven days |
-| `EVAL_ALARM_STATE_DIR` | `$XDG_STATE_HOME/eval-alarm`, else `~/.local/state/eval-alarm` | `budget.jsonl` and `answers/<suite>/<time>/<case>-r<n>.txt`, every answer kept so a low score can be read instead of re-run |
+| `EVAL_ALARM_STATE_DIR` | `$XDG_STATE_HOME/eval-alarm`, else `~/.local/state/eval-alarm` | `budget.jsonl` and `answers/<suite>-<path hash>/<time>/<case>-r<n>.txt`, every answer kept so a low score can be read instead of re-run |
 
 ## How it works
 
