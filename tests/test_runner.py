@@ -143,18 +143,33 @@ class TestBudget(RunnerCase):
         self.assertEqual(self.budget_rows(), [])
 
     def test_parallel_runs_never_spend_past_the_cap(self) -> None:
-        """Twelve processes race for a budget of five; the lock lets exactly
-        five reservations through."""
+        """Two processes race for a budget of one. Each, after counting the
+        ledger, waits at a barrier (up to 2 s) until the other has counted
+        too. Without the lock both count 0 and both reserve; with it the
+        second cannot count until the first has written, so exactly one
+        reservation goes through."""
         path = os.path.join(self.root, "state", "budget.jsonl")
-        code = ("import datetime, sys; from eval_alarm import ledger; "
-                "now = datetime.datetime.now(datetime.timezone.utc)\n"
-                "try: ledger.reserve(sys.argv[1], [{'run': 1}], 5, now)\n"
-                "except ledger.OverBudget: sys.exit(1)")
+        barrier = os.path.join(self.root, "barrier")
+        os.makedirs(barrier)
+        code = (
+            "import datetime, os, sys, time\n"
+            "from eval_alarm import ledger\n"
+            "count = ledger._used\n"
+            "def counted_then_wait(f, now):\n"
+            "    used = count(f, now)\n"
+            "    open(os.path.join(sys.argv[2], str(os.getpid())), 'w').close()\n"
+            "    end = time.monotonic() + 2\n"
+            "    while len(os.listdir(sys.argv[2])) < 2 and time.monotonic() < end:\n"
+            "        time.sleep(0.01)\n"
+            "    return used\n"
+            "ledger._used = counted_then_wait\n"
+            "now = datetime.datetime.now(datetime.timezone.utc)\n"
+            "try: ledger.reserve(sys.argv[1], [{'run': 1}], 1, now)\n"
+            "except ledger.OverBudget: sys.exit(1)\n")
         root = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
-        procs = [subprocess.Popen([sys.executable, "-c", code, path], cwd=root) for _ in range(12)]
-        codes = sorted(p.wait() for p in procs)
-        self.assertEqual(codes, [0] * 5 + [1] * 7)
-        self.assertEqual(len(self.budget_rows()), 5)
+        procs = [subprocess.Popen([sys.executable, "-c", code, path, barrier], cwd=root) for _ in range(2)]
+        self.assertEqual(sorted(p.wait() for p in procs), [0, 1])
+        self.assertEqual(len(self.budget_rows()), 1)
 
     def test_a_cut_off_budget_line_does_not_swallow_the_next_reservation(self) -> None:
         path = os.path.join(self.root, "state", "budget.jsonl")
