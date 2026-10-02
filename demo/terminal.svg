@@ -1,0 +1,43 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 660 772" role="img" aria-labelledby="t d" font-family="SF Mono, Menlo, Consolas, monospace" font-size="16">
+  <title id="t">eval-alarm: a prompt edit caught by its own history</title>
+  <desc id="d">A sentiment suite scores 0.75 and holds steady against its committed history. A one-line edit drops the prompt's format instruction; verify names the edited file as never re-scored, the re-run scores 0.25, and check raises DROP and SLIDE alarms with exit 1.</desc>
+  <style>
+    .p { fill: #7ee2a8; }
+    .cmd { fill: #e8eef5; }
+    .dim { fill: #9fb0c0; }
+    .bad { fill: #ff9494; }
+    .good { fill: #7ee2a8; }
+  </style>
+  <rect width="660" height="772" rx="14" fill="#0b0f14"/>
+  <rect width="660" height="40" rx="14" fill="#11161d"/>
+  <rect y="26" width="660" height="14" fill="#11161d"/>
+  <circle cx="26" cy="20" r="6" fill="#ff5f57"/>
+  <circle cx="48" cy="20" r="6" fill="#febc2e"/>
+  <circle cx="70" cy="20" r="6" fill="#28c840"/>
+  <text x="92" y="26" class="dim" font-size="14">eval-alarm: a prompt edit caught by its own history</text>
+  <text x="24" y="72"><tspan class="p">$</tspan><tspan class="cmd" dx="8">eval-alarm run demo/sentiment</tspan></text>
+  <text x="24" y="100" class="dim">  delivery  1.00  1.00  1.00</text>
+  <text x="24" y="128" class="dim">  praise    1.00  1.00  1.00</text>
+  <text x="24" y="156" class="dim">  refund    1.00  1.00  1.00</text>
+  <text x="24" y="184" class="dim">  sarcasm   0.00  0.00  0.00</text>
+  <text x="24" y="212" class="dim">sentiment: mean 0.75, spread 0.00 over 12 scored runs</text>
+  <text x="24" y="240" class="dim">budget: 12 of 100 model calls used in the last 7 days</text>
+  <text x="24" y="268"><tspan class="p">$</tspan><tspan class="cmd" dx="8">eval-alarm check demo/sentiment</tspan></text>
+  <text x="24" y="296" class="dim">sentiment: steady, mean 0.75 (last 3 runs: 0.75 to 0.75)</text>
+  <text x="24" y="324"><tspan class="p">$</tspan><tspan class="cmd" dx="8">sed -i.bak '/one word/d' demo/prompts/sentiment.md</tspan></text>
+  <text x="24" y="352"><tspan class="p">$</tspan><tspan class="cmd" dx="8">eval-alarm verify demo/sentiment; echo &quot;exit $?&quot;</tspan></text>
+  <text x="24" y="380" class="bad">STALE sentiment: changed demo/prompts/sentiment.md</text>
+  <text x="24" y="408" class="bad">re-score: eval-alarm run demo/sentiment</text>
+  <text x="24" y="436" class="bad">exit 1</text>
+  <text x="24" y="464"><tspan class="p">$</tspan><tspan class="cmd" dx="8">eval-alarm run demo/sentiment</tspan></text>
+  <text x="24" y="492" class="dim">  delivery  0.00  0.00  0.00</text>
+  <text x="24" y="520" class="dim">  praise    0.00  0.00  0.00</text>
+  <text x="24" y="548" class="dim">  refund    1.00  1.00  1.00</text>
+  <text x="24" y="576" class="dim">  sarcasm   0.00  0.00  0.00</text>
+  <text x="24" y="604" class="dim">sentiment: mean 0.25, spread 0.00 over 12 scored runs</text>
+  <text x="24" y="632" class="dim">budget: 24 of 100 model calls used in the last 7 days</text>
+  <text x="24" y="660"><tspan class="p">$</tspan><tspan class="cmd" dx="8">eval-alarm check demo/sentiment; echo &quot;exit $?&quot;</tspan></text>
+  <text x="24" y="688" class="bad">ALARM sentiment DROP: mean 0.25, lowest of last 4 was 0.75</text>
+  <text x="24" y="716" class="bad">ALARM sentiment SLIDE: mean 0.25, average of last 4 was 0.75</text>
+  <text x="24" y="744" class="bad">exit 1</text>
+</svg>

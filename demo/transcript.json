@@ -1,0 +1,32 @@
+[
+  {
+    "cmd": "eval-alarm run demo/sentiment",
+    "out": "  delivery  1.00  1.00  1.00\n  praise    1.00  1.00  1.00\n  refund    1.00  1.00  1.00\n  sarcasm   0.00  0.00  0.00\nsentiment: mean 0.75, spread 0.00 over 12 scored runs\nbudget: 12 of 100 model calls used in the last 7 days",
+    "status": 0
+  },
+  {
+    "cmd": "eval-alarm check demo/sentiment",
+    "out": "sentiment: steady, mean 0.75 (last 3 runs: 0.75 to 0.75)",
+    "status": 0
+  },
+  {
+    "cmd": "sed -i.bak '/one word/d' demo/prompts/sentiment.md",
+    "out": "",
+    "status": 0
+  },
+  {
+    "cmd": "eval-alarm verify demo/sentiment; echo \"exit $?\"",
+    "out": "STALE sentiment: changed demo/prompts/sentiment.md\nre-score: eval-alarm run demo/sentiment\nexit 1",
+    "status": 0
+  },
+  {
+    "cmd": "eval-alarm run demo/sentiment",
+    "out": "  delivery  0.00  0.00  0.00\n  praise    0.00  0.00  0.00\n  refund    1.00  1.00  1.00\n  sarcasm   0.00  0.00  0.00\nsentiment: mean 0.25, spread 0.00 over 12 scored runs\nbudget: 24 of 100 model calls used in the last 7 days",
+    "status": 0
+  },
+  {
+    "cmd": "eval-alarm check demo/sentiment; echo \"exit $?\"",
+    "out": "ALARM sentiment DROP: mean 0.25, lowest of last 4 was 0.75\nALARM sentiment SLIDE: mean 0.25, average of last 4 was 0.75\nexit 1",
+    "status": 0
+  }
+]

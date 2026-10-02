@@ -1,0 +1,7 @@
+{
+  "description": "Sentiment labels for customer reviews, one word per answer",
+  "prompt": "../prompts/sentiment.md",
+  "command": "python3 demo/fake_model.py --model {model}",
+  "model": "fake-small",
+  "runs": 3
+}
