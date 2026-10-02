@@ -35,13 +35,18 @@ class TestContains(unittest.TestCase):
 
 class TestRegex(unittest.TestCase):
     def test_patterns_and_must_not_count_as_one_check_each(self) -> None:
-        exp = {"scorer": "regex", "patterns": [r"^VERDICT: (PASS|FAIL)$", r"line \d+"],
+        exp = {"scorer": "regex", "patterns": [r"VERDICT: (PASS|FAIL)$", r"line \d+"],
                "must_not": [r"as an AI"]}
-        self.assertEqual(score("Bug on line 4.\nVERDICT: FAIL", exp), 1.0)
+        self.assertEqual(score("Bug on line 4.\nVERDICT: FAIL\n", exp), 1.0)
         self.assertEqual(score("As an AI:\nVERDICT: FAIL", {**exp, "ignore_case": True}), 0.3333)
 
-    def test_patterns_match_per_line(self) -> None:
-        exp = {"scorer": "regex", "patterns": [r"^## Summary$"]}
+    def test_anchors_hold_the_whole_answer_not_one_line(self) -> None:
+        exp = {"scorer": "regex", "patterns": [r"^VERDICT: PASS$"]}
+        self.assertEqual(score("VERDICT: PASS\n", exp), 1.0)
+        self.assertEqual(score("Looks fine.\nVERDICT: PASS\nActually VERDICT: FAIL", exp), 0.0)
+
+    def test_an_inline_flag_asks_for_per_line_matching(self) -> None:
+        exp = {"scorer": "regex", "patterns": [r"(?m)^## Summary$"]}
         self.assertEqual(score("intro\n## Summary\nbody", exp), 1.0)
 
 
@@ -61,6 +66,12 @@ class TestJson(unittest.TestCase):
 
     def test_a_boolean_is_not_a_number(self) -> None:
         self.assertEqual(score('{"label": "negative", "confidence": true}', self.exp), 0.6667)
+
+    def test_a_boolean_field_does_not_equal_a_number(self) -> None:
+        self.assertEqual(score('{"ok": 1}', {"scorer": "json", "fields": {"ok": True}}), 0.0)
+        self.assertEqual(score('{"n": true}', {"scorer": "json", "fields": {"n": 1}}), 0.0)
+        self.assertEqual(score('{"n": [true]}', {"scorer": "json", "fields": {"n": [1]}}), 0.0)
+        self.assertEqual(score('{"n": 1.0, "ok": true}', {"scorer": "json", "fields": {"n": 1, "ok": True}}), 1.0)
 
     def test_prose_scores_zero(self) -> None:
         self.assertEqual(score("The label is negative.", self.exp), 0.0)
@@ -83,6 +94,13 @@ class TestValidate(unittest.TestCase):
 
     def test_regex_that_does_not_compile(self) -> None:
         self.assertInvalid({"scorer": "regex", "patterns": ["("]}, "does not compile")
+
+    def test_an_empty_contains_entry_is_refused(self) -> None:
+        self.assertInvalid({"scorer": "contains", "expected": ["refund", ""]}, "empty string")
+
+    def test_a_pattern_that_matches_nothing_at_all_is_refused(self) -> None:
+        self.assertInvalid({"scorer": "regex", "patterns": [".*"]}, "matches an empty answer")
+        self.assertInvalid({"scorer": "regex", "must_not": ["x?"]}, "matches an empty answer")
 
     def test_regex_with_no_checks(self) -> None:
         self.assertInvalid({"scorer": "regex"}, "nothing would be scored")

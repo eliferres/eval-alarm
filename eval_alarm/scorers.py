@@ -7,16 +7,19 @@ A case's expected.json names its scorer and that scorer's settings:
             of a list of them), else 0.
   contains  {"scorer": "contains", "expected": ["refund", "apolog"]}
             the share of expected strings that appear in the answer.
-  regex     {"scorer": "regex", "patterns": ["^VERDICT: (PASS|FAIL)$"],
+  regex     {"scorer": "regex", "patterns": ["VERDICT: (PASS|FAIL)$"],
              "must_not": ["as an AI"]}
-            the share of checks that pass: each pattern must match, each
-            must_not pattern must not. Patterns run in multiline mode.
+            the share of checks that pass: each pattern must be found in the
+            trimmed answer, each must_not pattern must not. ^ and $ anchor
+            the whole answer, so the example needs the verdict on the last
+            line; start a pattern with (?m) to anchor per line instead.
   json      {"scorer": "json", "shape": {"label": "string"},
              "fields": {"label": "negative"}}
             0 when the answer is not JSON (a single fenced json block is
             unwrapped first); otherwise the share of checks that pass: each
             shape key present with that type, each field equal to its value.
-            With neither, any valid JSON scores 1.
+            With neither, any valid JSON scores 1. Values compare strictly:
+            true is not 1, though 1 and 1.0 are the same number.
 
 exact, contains and regex accept "ignore_case": true.
 
@@ -55,9 +58,13 @@ def _patterns(exp: dict, key: str) -> List[str]:
     items = _strings(exp, key, allow_empty=True)
     for p in items:
         try:
-            re.compile(p)
+            matches_nothing = re.search(p, "") is not None
         except re.error as e:
             raise ValueError(f"{key} pattern {p!r} does not compile ({e})") from None
+        if matches_nothing:
+            # Such a pattern is found in every answer, so it would score the
+            # same whatever the model said.
+            raise ValueError(f"{key} pattern {p!r} matches an empty answer, so it tests nothing")
     return items
 
 
@@ -77,7 +84,9 @@ def validate(exp: Any) -> None:
     if scorer not in SCORERS:
         raise ValueError("scorer must be one of " + ", ".join(sorted(SCORERS)))
     if scorer in ("exact", "contains"):
-        _strings(exp, "expected")
+        wanted = _strings(exp, "expected")
+        if scorer == "contains" and "" in wanted:
+            raise ValueError("expected holds an empty string, which every answer contains")
         _ignore_case(exp)
     elif scorer == "regex":
         if not _patterns(exp, "patterns") + _patterns(exp, "must_not"):
@@ -104,11 +113,23 @@ def score_contains(answer: str, exp: dict) -> float:
 
 
 def score_regex(answer: str, exp: dict) -> float:
-    flags = re.M | (re.I if exp.get("ignore_case") else 0)
+    flags = re.I if exp.get("ignore_case") else 0
+    text = answer.strip()
     must, must_not = _patterns(exp, "patterns"), _patterns(exp, "must_not")
-    passed = sum(bool(re.search(p, answer, flags)) for p in must)
-    passed += sum(not re.search(p, answer, flags) for p in must_not)
+    passed = sum(bool(re.search(p, text, flags)) for p in must)
+    passed += sum(not re.search(p, text, flags) for p in must_not)
     return passed / (len(must) + len(must_not))
+
+
+def _same(got: Any, want: Any) -> bool:
+    """JSON equality without Python's bool-is-int: true never equals 1."""
+    if isinstance(got, bool) or isinstance(want, bool):
+        return type(got) is type(want) and got == want
+    if isinstance(got, dict) and isinstance(want, dict):
+        return got.keys() == want.keys() and all(_same(got[k], want[k]) for k in want)
+    if isinstance(got, list) and isinstance(want, list):
+        return len(got) == len(want) and all(_same(g, w) for g, w in zip(got, want))
+    return got == want
 
 
 def score_json(answer: str, exp: dict) -> float:
@@ -124,7 +145,7 @@ def score_json(answer: str, exp: dict) -> float:
     if not isinstance(data, dict):
         return 0.0
     passed = sum(key in data and TYPES[kind](data[key]) for key, kind in shape.items())
-    passed += sum(key in data and data[key] == value for key, value in fields.items())
+    passed += sum(key in data and _same(data[key], value) for key, value in fields.items())
     return passed / (len(shape) + len(fields))
 
 
