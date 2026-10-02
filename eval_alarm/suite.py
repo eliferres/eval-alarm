@@ -145,7 +145,23 @@ def load(folder: str) -> Dict[str, Any]:
         prompt = template.replace(CASE_PLACEHOLDER, text) if template is not None else text
         cases.append({"name": case, "prompt": prompt, "expected": expected})
 
-    return {"name": name, "dir": folder, "settings": settings, "cases": cases, "covers": covers}
+    return {"name": name, "dir": folder, "settings": settings, "cases": cases, "covers": covers,
+            "warnings": _margin_warnings(name, settings, len(cases))}
+
+
+def _margin_warnings(name: str, settings: Dict[str, Any], cases: int) -> List[str]:
+    """One line per margin finer than a single answer. One wrong answer
+    moves the mean by 1/(cases x runs) and, read more than once, moves its
+    case's spread by up to 1, which is 1/cases of the suite's spread. A
+    margin below that lets one unlucky answer raise the alarm."""
+    a, answers = settings["alarm"], cases * settings["runs"]
+    weights = [("drop_margin", "DROP", "one answer's weight on the mean", answers),
+               ("slide_margin", "SLIDE", "one answer's weight on the mean", answers)]
+    if settings["runs"] > 1:
+        weights.append(("spread_margin", "WIDER", "one case's weight on the spread", cases))
+    return [f"{name}: {key} {a[key]:.2f} is below {what} (1/{n} = {1 / n:.2f}), "
+            f"so one wrong answer can raise {rule}"
+            for key, rule, what, n in weights if a[key] < 1 / n - 1e-9]
 
 
 def _files(folder: str, rel: str) -> List[tuple]:

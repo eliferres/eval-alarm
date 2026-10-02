@@ -64,6 +64,13 @@ def parser() -> argparse.ArgumentParser:
     return p
 
 
+def _load(folder: str) -> dict:
+    suite = load(folder)
+    for warning in suite["warnings"]:
+        print(f"{PROG}: warning: {warning}", file=sys.stderr, flush=True)
+    return suite
+
+
 def _history(suite: dict) -> tuple:
     records, torn = ledger.read_results(os.path.join(suite["dir"], "results.jsonl"))
     kept = alarm.usable(records)
@@ -72,7 +79,7 @@ def _history(suite: dict) -> tuple:
 
 def cmd_run(args: argparse.Namespace, say: Callable[[str], None]) -> int:
     budget = _budget(args.budget if args.budget is not None else os.environ.get("EVAL_ALARM_BUDGET"))
-    suites = [load(s) for s in args.suites]
+    suites = [_load(s) for s in args.suites]
     overrides = {"command": args.cmd, "model": args.model, "runs": args.runs}
     now = datetime.datetime.now(datetime.timezone.utc)
     try:
@@ -88,7 +95,7 @@ def cmd_review(args: argparse.Namespace, say: Callable[[str], None]) -> int:
     when any verdict is a finding."""
     verdicts = []
     for folder in args.suites:
-        suite = load(folder)
+        suite = _load(folder)
         records, skipped = _history(suite)
         if args.command == "check":
             v = alarm.judge(suite["name"], records, suite["settings"]["alarm"])

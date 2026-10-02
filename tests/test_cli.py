@@ -55,18 +55,23 @@ class TestCommand(unittest.TestCase):
 
     def test_a_clean_run_exits_zero(self) -> None:
         done = self.score("positive", "negative")
-        self.assertEqual((done.returncode, done.stderr), (0, ""))
+        self.assertEqual(done.returncode, 0)
         self.assertIn("sentiment: mean 1.00, spread none over 2 scored runs", done.stdout)
 
     def test_a_failed_call_exits_one(self) -> None:
         self.assertEqual(self.score("positive", "!fail").returncode, 1)
 
+    def test_a_suite_too_small_for_its_margins_warns_on_stderr(self) -> None:
+        done = self.cli("check", self.suite)
+        self.assertEqual(done.returncode, 0)
+        self.assertIn("eval-alarm: warning: sentiment: drop_margin 0.05 is below one answer's weight", done.stderr)
+
     def test_over_budget_exits_one_with_one_line(self) -> None:
         write(self.answers, json.dumps(["positive", "negative"]))
         done = self.cli("run", self.suite, "--budget", "1")
         self.assertEqual(done.returncode, 1)
-        self.assertEqual(done.stderr, "eval-alarm: refused: the last 7 days used 0 of 1 model calls; "
-                                      "this run needs 2, which would make 2\n")
+        self.assertEqual(done.stderr.splitlines()[-1], "eval-alarm: refused: the last 7 days used 0 of 1 "
+                                                       "model calls; this run needs 2, which would make 2")
 
     def test_the_budget_comes_from_the_environment(self) -> None:
         self.env["EVAL_ALARM_BUDGET"] = "1"
@@ -96,7 +101,7 @@ class TestCommand(unittest.TestCase):
             model_pid = int(f.read())
         proc.send_signal(signal.SIGINT)
         _, err = proc.communicate(timeout=10)
-        self.assertEqual((proc.returncode, err), (130, "eval-alarm: interrupted\n"))
+        self.assertEqual((proc.returncode, err.splitlines()[-1]), (130, "eval-alarm: interrupted"))
         deadline = time.monotonic() + 5
         while alive(model_pid) and time.monotonic() < deadline:
             time.sleep(0.05)
@@ -149,7 +154,8 @@ class TestCommand(unittest.TestCase):
         with open(os.path.join(self.suite, "results.jsonl"), "ab") as f:
             f.write(b"\xff\n")
         done = self.cli("check", self.suite)
-        self.assertEqual((done.returncode, done.stderr), (0, ""))
+        self.assertEqual(done.returncode, 0)
+        self.assertNotIn("Traceback", done.stderr)
         self.assertIn("1 unreadable line(s) in results.jsonl skipped", done.stdout)
 
     def test_verify_refuses_an_edit_that_was_never_rescored(self) -> None:

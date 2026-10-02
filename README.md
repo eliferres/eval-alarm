@@ -81,6 +81,7 @@ Each case's `expected.json` names one scorer. A score runs from 0 to 1, and part
 - `covers` lists the files and folders whose edits should force a re-score. It defaults to the template. Paths in `suite.json` resolve against the suite folder. Linked folders inside a covered folder are followed.
 - `runs` is how many times each case is sent. It defaults to 3 so every run has a spread to compare.
 - `window` is how many earlier scored runs form the baseline.
+- The margins are fixed numbers, so they only make sense for a suite big enough that one answer weighs less than the margin. One wrong answer moves the mean by 1 / (cases x runs) and the spread by up to 1 / cases. The defaults need at least 10 cases at 3 runs each (30 answers: 0.033 per answer on the mean, 0.10 per case on the spread). A smaller suite gets a warning on stderr every time it loads, naming each margin it is too small for; raise those margins, as the four-case demo suite does, or add cases.
 
 ## Usage
 
@@ -117,7 +118,7 @@ eval-alarm verify evals/*/ && eval-alarm check evals/*/
 
 **The baseline is the suite's own history, not a fixed pass mark.** A fixed threshold is wrong in both directions. Set it at 0.8 and a suite that has scored 0.97 for months can lose a sixth of its quality without a sound, while a deliberately hard suite that sits at 0.6 fails every run until someone lowers the bar to silence it. Comparing against the last few runs holds each suite to its own record, and the window lets that record move when the suite or the model really changes.
 
-**Several reads per case.** Models answer the same prompt differently from one run to the next. Three reads give each case a spread, the mean absorbs one unlucky answer, and `WIDER` turns rising inconsistency into a signal of its own.
+**Several reads per case.** Models answer the same prompt differently from one run to the next. Three reads give each case a spread, and `WIDER` turns rising inconsistency into a signal of its own. Whether one unlucky answer can raise an alarm depends on the suite's size against its margins, which is why a suite too small for them is warned about when it loads.
 
 **The budget is reserved before anything starts.** Every planned call is written to the budget ledger under an exclusive file lock before the first call, so two runs started at the same moment cannot both read "room left" and together spend past the cap. A call that fails or times out still counts; the cap errs toward spending less.
 

@@ -63,6 +63,23 @@ class TestLoad(unittest.TestCase):
             f.write(b"\xff\xfe")
         self.assertRefused(folder, "is not UTF-8 text")
 
+    def test_margins_finer_than_one_answer_are_warned_about(self) -> None:
+        # 2 cases x 3 runs: one answer moves the mean by 1/6, one case's
+        # spread moves the suite's spread by 1/2.
+        suite = load(make_suite(self.root))
+        self.assertEqual(suite["warnings"], [
+            "sentiment: drop_margin 0.05 is below one answer's weight on the mean (1/6 = 0.17), "
+            "so one wrong answer can raise DROP",
+            "sentiment: slide_margin 0.10 is below one answer's weight on the mean (1/6 = 0.17), "
+            "so one wrong answer can raise SLIDE",
+            "sentiment: spread_margin 0.10 is below one case's weight on the spread (1/2 = 0.50), "
+            "so one wrong answer can raise WIDER",
+        ])
+
+    def test_a_suite_big_enough_for_its_margins_loads_quietly(self) -> None:
+        cases = {f"c{i}": ("x", {"scorer": "exact", "expected": "y"}) for i in range(10)}
+        self.assertEqual(load(make_suite(self.root, cases=cases))["warnings"], [])
+
     def test_suite_json_that_is_not_json(self) -> None:
         folder = make_suite(self.root)
         write(os.path.join(folder, "suite.json"), "{runs: 3")

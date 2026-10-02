@@ -3,5 +3,10 @@
   "prompt": "../prompts/sentiment.md",
   "command": "python3 demo/fake_model.py --model {model}",
   "model": "fake-small",
-  "runs": 3
+  "runs": 3,
+  "alarm": {
+    "drop_margin": 0.1,
+    "slide_margin": 0.15,
+    "spread_margin": 0.3
+  }
 }
