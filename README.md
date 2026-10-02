@@ -13,21 +13,18 @@ An edit to a prompt, a skill file or an agent's instructions can make the model'
 
 ```bash
 pipx install git+https://github.com/eliferres/eval-alarm
-eval-alarm run evals/triage --cmd 'llm -m {model}' --model <your-model> --dry
+git clone https://github.com/eliferres/eval-alarm.git && cd eval-alarm
+eval-alarm run demo/sentiment
+eval-alarm check demo/sentiment
 ```
 
-The model is any command that reads a prompt on stdin and prints the answer, so `claude -p --model {model}`, `llm -m {model}` or a script of your own all work. `--dry` prints the plan and the budget arithmetic without calling anything.
+The clone is only for the demo suite; the demo needs no network and no model. Its model, `demo/fake_model.py`, labels reviews by keyword and obeys one instruction, which is enough to replay the session in the picture exactly. CI replays it on every push. It is not on PyPI. Without installing, `python3 -m eval_alarm` in the clone does the same (Python 3.9+, no dependencies).
 
-It is not on PyPI. To try the demo from a clone instead (no network, no model, Python 3.9+, no dependencies):
+For your own suite, the model is any command that reads a prompt on stdin and prints the answer, so `claude -p --model {model}`, `llm -m {model}` or a script of your own all work. `--dry` prints the plan and the budget arithmetic without calling anything:
 
 ```bash
-git clone https://github.com/eliferres/eval-alarm.git
-cd eval-alarm
-python3 -m eval_alarm run demo/sentiment
-python3 -m eval_alarm check demo/sentiment
+eval-alarm run evals/<your-suite> --cmd 'llm -m {model}' --model <your-model> --dry
 ```
-
-The demo model in `demo/fake_model.py` labels reviews by keyword and obeys one instruction, which is enough to replay the session in the picture exactly. CI replays it on every push.
 
 ## What raises an alarm
 
