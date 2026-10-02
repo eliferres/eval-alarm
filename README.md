@@ -36,9 +36,10 @@ The demo model in `demo/fake_model.py` labels reviews by keyword and obeys one i
 | `DROP` | `check` | The latest mean is below the lowest mean of the earlier runs in the window by more than `drop_margin` (0.05). | A step down past anything the suite has scored recently. With 20 cases, one case flipping from pass to fail is 0.05 and stays quiet; two flips alarm. |
 | `SLIDE` | `check` | The latest mean is below the average of the earlier runs by more than `slide_margin` (0.10). | A decline spread over several edits never breaks the floor in one step. The average catches it. |
 | `WIDER` | `check` | The latest spread (how far repeat reads of the same case disagree) is above the widest earlier spread by more than `spread_margin` (0.10). | A prompt can keep its mean while its answers get less consistent; that shows up as spread first. |
+| `INCOMPLETE` | `check` | One or more calls in the latest run failed (non-zero exit, timeout, missing command). | The mean of the calls that happened to succeed says nothing about the ones that did not, so the run is not compared and fails the check instead. |
 | `STALE` | `verify` | A file the suite covers changed, appeared or disappeared since the suite's last scored run, or the suite was never scored. | Lets CI refuse a prompt edit that nobody re-scored. |
 
-Until a suite has `min_baseline` (3) earlier scored runs, `check` reports `baseline building` and never alarms. A run whose every call failed is reported as failed, not as a drop, and stays out of later baselines.
+Until a suite has `min_baseline` (3) earlier scored runs, `check` reports `baseline building` and never alarms. Only runs that scored every call form a baseline or count as scored for `verify`.
 
 ## Writing a suite
 
@@ -97,7 +98,7 @@ eval-alarm --version
 | Exit | Meaning |
 |---|---|
 | 0 | Clean: the run scored every call, no alarm, every covered file current |
-| 1 | Findings: an alarm, a stale or never-scored suite, a failed model call, or a run refused by the budget |
+| 1 | Findings: an alarm, an incomplete run, a stale or never-scored suite, a failed model call, or a run refused by the budget |
 | 2 | Usage or configuration error, one line on stderr |
 
 In CI, `verify` on every suite stops a prompt edit that arrived without a fresh run, and `check` stops one whose fresh run scored worse:
@@ -119,7 +120,7 @@ eval-alarm verify evals/*/ && eval-alarm check evals/*/
 
 **The budget is reserved before anything starts.** Every planned call is written to the budget ledger under an exclusive file lock before the first call, so two runs started at the same moment cannot both read "room left" and together spend past the cap. A call that fails or times out still counts; the cap errs toward spending less.
 
-**An outage is not a regression.** A failed call (non-zero exit, timeout, missing command) is recorded with its reason and left out of the mean and spread. A run where every call failed is reported as failed and never becomes part of a baseline, so a rate-limit afternoon does not register as a worse prompt.
+**An outage is neither a regression nor a pass.** A failed call (non-zero exit, timeout, missing command) is recorded with its reason and left out of the mean and spread, so a rate-limit afternoon does not register as a worse prompt. It does not register as a healthy one either: a run with any failed call is reported `INCOMPLETE`, exits 1, never joins a baseline, and never vouches for the covered files in `verify`. Re-run it.
 
 **The fingerprint is taken before the calls.** Each record stores a sha256 of every covered file as it was when the run began, so `verify` compares against the version that was actually scored and names each file that changed since.
 

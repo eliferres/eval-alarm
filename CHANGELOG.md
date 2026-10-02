@@ -10,7 +10,7 @@ All notable changes to this project are documented in this file. The format is b
 - Four deterministic scorers for a case's expected.json: `exact`, `contains`, `regex` and `json`, each scoring the share of its checks that pass.
 - A prompt template per suite, with a `{{case}}` placeholder each case's text fills.
 - A budget of model calls per rolling seven days, checked against the whole planned run before the first call; `--dry` prints the plan and the arithmetic.
-- Failed or timed-out calls are recorded with their reason and kept out of the scores.
+- Failed or timed-out calls are recorded with their reason and kept out of the scores; `check` reports a run with any failed call as INCOMPLETE and exits 1, and such a run never joins a baseline or satisfies `verify`.
 - Every run is appended to the suite's `results.jsonl`, and every answer is kept on disk for reading.
 - `eval-alarm check` raises DROP, SLIDE and WIDER alarms against the suite's own recent runs, and reports "baseline building" until there are enough of them.
 - `eval-alarm verify` fails when a file the suite covers changed since its last scored run, naming the file.

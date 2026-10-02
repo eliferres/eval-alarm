@@ -91,7 +91,7 @@ def cmd_review(args: argparse.Namespace, say: Callable[[str], None]) -> int:
         records, skipped = _history(suite)
         if args.command == "check":
             v = alarm.judge(suite["name"], records, suite["settings"]["alarm"])
-            finding = bool(v["alarms"])
+            finding = v["finding"]
         else:
             v = alarm.verify(suite, records)
             finding = v["status"] != "current"

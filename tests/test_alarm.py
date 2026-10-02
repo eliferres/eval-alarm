@@ -53,14 +53,21 @@ class TestJudge(unittest.TestCase):
         history = [rec(0.4)] + [rec(0.9)] * 5 + [rec(0.5)]
         self.assertIn("DROP", judge("s", history, CFG)["alarms"])
 
-    def test_a_failed_latest_run_is_not_a_drop(self) -> None:
+    def test_a_wholly_failed_latest_run_is_incomplete_not_a_drop(self) -> None:
         v = judge("s", [rec(0.9)] * 3 + [rec(None, failed=6)], CFG)
-        self.assertEqual(v["status"], "failed")
-        self.assertEqual(v["alarms"], [])
+        self.assertEqual((v["status"], v["alarms"], v["finding"]), ("incomplete", [], True))
 
-    def test_failed_runs_stay_out_of_the_baseline(self) -> None:
-        v = judge("s", [rec(0.9), rec(None, failed=6), rec(0.9), rec(0.9)], CFG)
+    def test_a_partly_failed_run_is_incomplete_even_when_its_mean_looks_fine(self) -> None:
+        v = judge("s", [rec(1.0)] * 3 + [rec(1.0, failed=9)], CFG)
+        self.assertEqual((v["status"], v["finding"]), ("incomplete", True))
+        self.assertEqual(v["lines"], ["INCOMPLETE s: 9 calls failed; mean 1.00 is not compared"])
+
+    def test_runs_with_any_failure_stay_out_of_the_baseline(self) -> None:
+        v = judge("s", [rec(0.9), rec(0.9, failed=1), rec(None, failed=6), rec(0.9), rec(0.9)], CFG)
         self.assertEqual(v["status"], "baseline building")
+
+    def test_a_clean_steady_run_is_no_finding(self) -> None:
+        self.assertFalse(judge("s", [rec(0.9)] * 4, CFG)["finding"])
 
     def test_records_with_unreadable_numbers_are_left_out(self) -> None:
         self.assertEqual(usable([rec(0.9), {"mean": "high"}, {"mean": True}]), [rec(0.9)])
@@ -96,8 +103,13 @@ class TestVerify(unittest.TestCase):
 
     def test_a_failed_run_after_the_edit_does_not_count_as_scored(self) -> None:
         write(os.path.join(self.root, "prompts", "p.md"), "Classify: {{case}}")
-        failed = {"mean": None, "covers": fingerprint(self.suite)}
+        failed = {"mean": None, "failed": 2, "covers": fingerprint(self.suite)}
         self.assertEqual(verify(self.suite, [self.scored, failed])["status"], "stale")
+
+    def test_a_run_with_some_failures_does_not_vouch_for_the_files(self) -> None:
+        write(os.path.join(self.root, "prompts", "p.md"), "Classify: {{case}}")
+        partial = {"mean": 1.0, "failed": 1, "covers": fingerprint(self.suite)}
+        self.assertEqual(verify(self.suite, [self.scored, partial])["status"], "stale")
 
     def test_never_scored(self) -> None:
         self.assertEqual(verify(self.suite, [])["status"], "never scored")

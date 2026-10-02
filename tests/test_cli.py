@@ -82,6 +82,14 @@ class TestCommand(unittest.TestCase):
         self.assertEqual(done.returncode, 1)
         self.assertTrue(done.stdout.startswith("ALARM sentiment DROP: mean 0.50"))
 
+    def test_check_exits_one_when_most_calls_failed(self) -> None:
+        for _ in range(3):
+            self.score("positive", "negative")
+        self.assertEqual(self.score("positive", "!fail").returncode, 1)
+        done = self.cli("check", self.suite)
+        self.assertEqual(done.returncode, 1)
+        self.assertEqual(done.stdout, "INCOMPLETE sentiment: 1 call failed; mean 1.00 is not compared\n")
+
     def test_check_json(self) -> None:
         for _ in range(4):
             self.score("positive", "negative")

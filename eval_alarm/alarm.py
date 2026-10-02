@@ -34,23 +34,31 @@ def usable(records: List[Dict[str, Any]]) -> List[Dict[str, Any]]:
             and (r.get("spread") is None or _number(r.get("spread")))]
 
 
-def scored(record: Dict[str, Any]) -> bool:
-    return record.get("mean") is not None
+def clean(record: Dict[str, Any]) -> bool:
+    """A run that scored every planned call. Only clean runs form a baseline
+    or vouch for the covered files: the mean of the calls that happened to
+    succeed says little about the ones that did not."""
+    return record.get("mean") is not None and not record.get("failed")
 
 
 def judge(name: str, records: List[Dict[str, Any]], cfg: Dict[str, Any]) -> Dict[str, Any]:
     """The verdict on the latest record against the scored records before it."""
-    v: Dict[str, Any] = {"suite": name, "alarms": [], "lines": []}
+    v: Dict[str, Any] = {"suite": name, "alarms": [], "lines": [], "finding": False}
     if not records:
         v["status"] = "no runs"
         v["lines"].append(f"{name}: no runs yet")
         return v
     latest = records[-1]
-    earlier = [r for r in records[:-1] if scored(r)][-cfg["window"]:]
+    earlier = [r for r in records[:-1] if clean(r)][-cfg["window"]:]
     v.update(mean=latest.get("mean"), spread=latest.get("spread"), baseline_runs=len(earlier))
-    if not scored(latest):
-        v["status"] = "failed"
-        v["lines"].append(f"{name}: latest run failed ({latest.get('failed', 0)} calls errored), not scored")
+    if not clean(latest):
+        # A run with failed calls is a finding of its own: it cannot be
+        # compared, and a quiet exit would let it pass CI as healthy.
+        failed = latest.get("failed") or 0
+        mean = "no score" if latest.get("mean") is None else f"mean {latest['mean']:.2f}"
+        v.update(status="incomplete", finding=True)
+        v["lines"].append(f"INCOMPLETE {name}: {failed} call{'' if failed == 1 else 's'} failed; "
+                          f"{mean} is not compared")
         return v
     if len(earlier) < cfg["min_baseline"]:
         v["status"] = "baseline building"
@@ -78,22 +86,25 @@ def judge(name: str, records: List[Dict[str, Any]], cfg: Dict[str, Any]) -> Dict
             v["lines"].append(f"ALARM {name} WIDER: spread {latest['spread']:.2f}, "
                               f"widest of last {n} was {max(spreads):.2f}")
     v["status"] = "alarm" if v["alarms"] else "steady"
+    v["finding"] = bool(v["alarms"])
     if not v["alarms"]:
         v["lines"].append(f"{name}: steady, mean {mean:.2f} (last {n} runs: {floor:.2f} to {top:.2f})")
     return v
 
 
 def verify(suite: Dict[str, Any], records: List[Dict[str, Any]]) -> Dict[str, Any]:
-    """Whether every covered file matches the last scored run's fingerprint."""
+    """Whether every covered file matches the fingerprint of the last run
+    that scored every call."""
     name = suite["name"]
     if not suite["covers"]:
         raise SuiteError(f"suite {suite['dir']} covers no files; set \"covers\" or \"prompt\" in suite.json")
     last: Optional[Dict[str, Any]] = next((r for r in reversed(records)
-                                           if scored(r) and isinstance(r.get("covers"), dict)), None)
+                                           if clean(r) and isinstance(r.get("covers"), dict)), None)
     v: Dict[str, Any] = {"suite": name, "changed": [], "added": [], "removed": []}
     if last is None:
         v["status"] = "never scored"
-        v["lines"] = [f"STALE {name}: never scored", f"re-score: eval-alarm run {suite['dir']}"]
+        v["lines"] = [f"STALE {name}: no run has scored every call yet",
+                      f"re-score: eval-alarm run {suite['dir']}"]
         return v
     then, now = last["covers"], fingerprint(suite, strict=False)
 
