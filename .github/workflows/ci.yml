@@ -1,0 +1,41 @@
+name: ci
+
+on:
+  push:
+    branches: [main]
+  pull_request:
+
+jobs:
+  test:
+    runs-on: ${{ matrix.os }}
+    strategy:
+      matrix:
+        os: [ubuntu-latest, macos-latest]
+        python: ["3.9", "3.11", "3.13"]
+    env:
+      EVAL_ALARM_STATE_DIR: ${{ runner.temp }}/eval-alarm-state
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: ${{ matrix.python }}
+      - name: Run tests
+        run: python -m unittest discover -s tests -v
+      - name: Score the demo suite, then catch a regression
+        run: |
+          python -m eval_alarm run demo/sentiment
+          python -m eval_alarm check demo/sentiment
+          python -m eval_alarm verify demo/sentiment
+          sed -i.bak '/one word/d' demo/prompts/sentiment.md
+          python -m eval_alarm verify demo/sentiment && code=0 || code=$?
+          [ "$code" = 1 ] || { echo "verify after the edit exited $code, expected 1"; exit 1; }
+          python -m eval_alarm run demo/sentiment
+          python -m eval_alarm check demo/sentiment && code=0 || code=$?
+          [ "$code" = 1 ] || { echo "check after the regression exited $code, expected 1"; exit 1; }
+          git checkout -- demo
+          rm demo/prompts/sentiment.md.bak
+      - name: Install and run the console script
+        run: |
+          python -m pip install .
+          eval-alarm --version
+          eval-alarm verify demo/sentiment
