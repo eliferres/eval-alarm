@@ -23,17 +23,16 @@ class TestJudge(unittest.TestCase):
     def test_baseline_building_never_alarms(self) -> None:
         v = judge("s", [rec(0.9), rec(0.9), rec(0.1)], CFG)
         self.assertEqual(v["status"], "baseline building")
-        self.assertEqual(v["lines"], ["s: baseline building, 2 of 3 earlier runs; latest mean 0.10"])
+        self.assertEqual(v["lines"], ["s: baseline building (2 of 3 runs), mean 0.10"])
 
     def test_steady(self) -> None:
         v = judge("s", [rec(0.9, 0.1), rec(0.8, 0.1), rec(0.85, 0.0), rec(0.82, 0.05)], CFG)
-        self.assertEqual(v["lines"], ["s: steady, mean 0.82, spread 0.05 against the last 3 runs (0.80 to 0.90)"])
+        self.assertEqual(v["lines"], ["s: steady, mean 0.82 (last 3 runs: 0.80 to 0.90)"])
 
     def test_drop_below_the_lowest_earlier_run(self) -> None:
         v = judge("s", [rec(0.8), rec(0.8), rec(0.82), rec(0.74)], CFG)
         self.assertEqual(v["alarms"], ["DROP"])
-        self.assertEqual(v["lines"], ["ALARM s DROP: mean 0.74 is below the lowest of the last 3 runs (0.80) "
-                                      "by more than 0.05"])
+        self.assertEqual(v["lines"], ["ALARM s DROP: mean 0.74, lowest of last 3 was 0.80"])
 
     def test_exactly_the_margin_is_not_a_drop(self) -> None:
         self.assertEqual(judge("s", [rec(0.8), rec(0.8), rec(0.8), rec(0.75)], CFG)["status"], "steady")
@@ -81,7 +80,7 @@ class TestVerify(unittest.TestCase):
 
     def test_unchanged_files_are_current(self) -> None:
         v = verify(self.suite, [self.scored])
-        self.assertEqual(v["lines"], ["sentiment: current, 2 covered files unchanged since the last scored run"])
+        self.assertEqual(v["lines"], ["sentiment: current (2 covered files unchanged)"])
 
     def test_an_edit_is_stale_and_named(self) -> None:
         write(os.path.join(self.root, "prompts", "p.md"), "Classify: {{case}}")

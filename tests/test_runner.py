@@ -76,7 +76,7 @@ class TestRun(RunnerCase):
         self.assertEqual(record["runs"][1]["error"], "exited 3: model unavailable")
         self.assertEqual((record["mean"], record["scored"], record["failed"]), (1.0, 3, 1))
         self.assertEqual(record["spread"], 0.0)  # praise was read once, refund twice alike
-        self.assertIn("run 2 failed: exited 3: model unavailable", self.said[2])
+        self.assertIn("run 2 failed: exited 3: model unavailable", self.said[1])
 
     def test_a_hung_model_is_timed_out(self) -> None:
         self.answer("!hang")

@@ -50,13 +50,12 @@ def judge(name: str, records: List[Dict[str, Any]], cfg: Dict[str, Any]) -> Dict
     v.update(mean=latest.get("mean"), spread=latest.get("spread"), baseline_runs=len(earlier))
     if not scored(latest):
         v["status"] = "failed"
-        v["lines"].append(f"{name}: the latest run failed ({latest.get('failed', 0)} calls errored); "
-                          "it is not scored and stays out of the baseline")
+        v["lines"].append(f"{name}: latest run failed ({latest.get('failed', 0)} calls errored), not scored")
         return v
     if len(earlier) < cfg["min_baseline"]:
         v["status"] = "baseline building"
-        v["lines"].append(f"{name}: baseline building, {len(earlier)} of {cfg['min_baseline']} earlier runs; "
-                          f"latest mean {latest['mean']:.2f}")
+        v["lines"].append(f"{name}: baseline building ({len(earlier)} of {cfg['min_baseline']} runs), "
+                          f"mean {latest['mean']:.2f}")
         return v
 
     means = [r["mean"] for r in earlier]
@@ -65,12 +64,10 @@ def judge(name: str, records: List[Dict[str, Any]], cfg: Dict[str, Any]) -> Dict
     n, mean = len(earlier), latest["mean"]
     if mean < floor - cfg["drop_margin"] - EPS:
         v["alarms"].append("DROP")
-        v["lines"].append(f"ALARM {name} DROP: mean {mean:.2f} is below the lowest of the last {n} runs "
-                          f"({floor:.2f}) by more than {cfg['drop_margin']:.2f}")
+        v["lines"].append(f"ALARM {name} DROP: mean {mean:.2f}, lowest of last {n} was {floor:.2f}")
     if mean < average - cfg["slide_margin"] - EPS:
         v["alarms"].append("SLIDE")
-        v["lines"].append(f"ALARM {name} SLIDE: mean {mean:.2f} is below the average of the last {n} runs "
-                          f"({average:.2f}) by more than {cfg['slide_margin']:.2f}")
+        v["lines"].append(f"ALARM {name} SLIDE: mean {mean:.2f}, average of last {n} was {average:.2f}")
     spreads = [r["spread"] for r in earlier if r.get("spread") is not None]
     # A spread baseline needs as many runs as the mean baseline; a suite run
     # once per case has no spread and never alarms on it.
@@ -78,13 +75,11 @@ def judge(name: str, records: List[Dict[str, Any]], cfg: Dict[str, Any]) -> Dict
         v["widest_spread"] = max(spreads)
         if latest["spread"] > max(spreads) + cfg["spread_margin"] + EPS:
             v["alarms"].append("WIDER")
-            v["lines"].append(f"ALARM {name} WIDER: spread {latest['spread']:.2f} is above the highest of the "
-                              f"last {n} runs ({max(spreads):.2f}) by more than {cfg['spread_margin']:.2f}")
+            v["lines"].append(f"ALARM {name} WIDER: spread {latest['spread']:.2f}, "
+                              f"widest of last {n} was {max(spreads):.2f}")
     v["status"] = "alarm" if v["alarms"] else "steady"
     if not v["alarms"]:
-        spread = "" if latest.get("spread") is None else f", spread {latest['spread']:.2f}"
-        v["lines"].append(f"{name}: steady, mean {mean:.2f}{spread} against the last {n} runs "
-                          f"({floor:.2f} to {top:.2f})")
+        v["lines"].append(f"{name}: steady, mean {mean:.2f} (last {n} runs: {floor:.2f} to {top:.2f})")
     return v
 
 
@@ -98,7 +93,7 @@ def verify(suite: Dict[str, Any], records: List[Dict[str, Any]]) -> Dict[str, An
     v: Dict[str, Any] = {"suite": name, "changed": [], "added": [], "removed": []}
     if last is None:
         v["status"] = "never scored"
-        v["lines"] = [f"STALE {name}: no scored run yet; run eval-alarm run {suite['dir']}"]
+        v["lines"] = [f"STALE {name}: never scored", f"re-score: eval-alarm run {suite['dir']}"]
         return v
     then, now = last["covers"], fingerprint(suite, strict=False)
 
@@ -108,15 +103,12 @@ def verify(suite: Dict[str, Any], records: List[Dict[str, Any]]) -> Dict[str, An
     v["changed"] = sorted(shown(p) for p in now if p in then and now[p] != then[p])
     v["added"] = sorted(shown(p) for p in now if p not in then)
     v["removed"] = sorted(shown(p) for p in then if p not in now)
-    lines = [f"STALE {name}: {p} {what} since the last scored run"
-             for what, paths in (("changed", v["changed"]), ("was added", v["added"]),
-                                 ("was removed", v["removed"]))
-             for p in paths]
+    lines = [f"STALE {name}: {what} {p}" for what in ("changed", "added", "removed") for p in v[what]]
     if lines:
         v["status"] = "stale"
-        v["lines"] = lines + [f"STALE {name}: re-score with eval-alarm run {suite['dir']}"]
+        v["lines"] = lines + [f"re-score: eval-alarm run {suite['dir']}"]
     else:
         v["status"] = "current"
         count = f"{len(now)} covered file" + ("" if len(now) == 1 else "s")
-        v["lines"] = [f"{name}: current, {count} unchanged since the last scored run"]
+        v["lines"] = [f"{name}: current ({count} unchanged)"]
     return v

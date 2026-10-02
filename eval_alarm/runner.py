@@ -156,7 +156,6 @@ def run_all(suites: List[Dict[str, Any]], overrides: Dict[str, Any], budget: int
     used = ledger.reserve(path, rows, budget, now)
     records = []
     for suite, settings, _, prints in prepared:
-        say(f"{suite['name']}: {len(suite['cases'])} cases x {settings['runs']} runs")
         record = run_suite(suite, settings, prints, now, say)
         mean = "none" if record["mean"] is None else f"{record['mean']:.2f}"
         spread = "none" if record["spread"] is None else f"{record['spread']:.2f}"
