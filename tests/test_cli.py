@@ -104,6 +104,17 @@ class TestCommand(unittest.TestCase):
         self.assertEqual(done.returncode, 0)
         self.assertIn("1 unreadable line(s) in results.jsonl skipped", done.stdout)
 
+    def test_a_cut_off_last_line_does_not_swallow_the_next_run(self) -> None:
+        for _ in range(3):
+            self.score("positive", "negative")
+        with open(os.path.join(self.suite, "results.jsonl"), "a", encoding="utf-8") as f:
+            f.write('{"mean": 0.')
+        self.score("positive", "it is negative")
+        done = self.cli("check", self.suite)
+        self.assertEqual(done.returncode, 1)
+        self.assertTrue(done.stdout.startswith("ALARM sentiment DROP: mean 0.50"), done.stdout)
+        self.assertIn("1 unreadable line(s) in results.jsonl skipped", done.stdout)
+
     def test_a_results_line_that_is_not_utf8_is_skipped(self) -> None:
         self.score("positive", "negative")
         with open(os.path.join(self.suite, "results.jsonl"), "ab") as f:

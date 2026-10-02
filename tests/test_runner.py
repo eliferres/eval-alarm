@@ -156,6 +156,12 @@ class TestBudget(RunnerCase):
         self.assertEqual(codes, [0] * 5 + [1] * 7)
         self.assertEqual(len(self.budget_rows()), 5)
 
+    def test_a_cut_off_budget_line_does_not_swallow_the_next_reservation(self) -> None:
+        path = os.path.join(self.root, "state", "budget.jsonl")
+        write(path, '{"ts": "2026-10-02T11:00:00+00:00"}\n{"ts": "20')
+        ledger.reserve(path, [{"run": 1}], 100, NOW)
+        self.assertEqual(ledger.budget_used(path, NOW), 2)
+
     def test_a_torn_ledger_line_is_skipped(self) -> None:
         write(os.path.join(self.root, "state", "budget.jsonl"), '{"ts": "2026-10-02T11:00:00+00:00"}\n{"ts": "20')
         self.assertEqual(ledger.budget_used(os.path.join(self.root, "state", "budget.jsonl"), NOW), 1)

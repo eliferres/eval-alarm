@@ -55,6 +55,18 @@ def locked(path: str, shared: bool = False) -> Iterator[Any]:
             fcntl.flock(f, fcntl.LOCK_UN)
 
 
+def _append(f: Any, text: str) -> None:
+    """Append whole lines to a file opened by locked(). A previous write cut
+    off mid-line leaves no newline at the end; without one, the next record
+    would join that fragment and be lost with it, so the fragment is closed
+    first and stays behind as one unreadable line that readers report."""
+    f.flush()
+    size = os.fstat(f.fileno()).st_size
+    if size and os.pread(f.fileno(), 1, size - 1) != b"\n":
+        text = "\n" + text
+    f.write(text)
+
+
 def _objects(lines: List[str]) -> List[Dict[str, Any]]:
     """Every line that holds a JSON object. A torn or hand-broken line is
     skipped rather than stopping the reader."""
@@ -98,13 +110,13 @@ def reserve(path: str, calls: List[Dict[str, Any]], budget: int, now: datetime.d
         if used + len(calls) > budget:
             raise OverBudget(used, len(calls), budget)
         ts = now.isoformat(timespec="seconds")
-        f.write("".join(json.dumps({"ts": ts, **c}) + "\n" for c in calls))
+        _append(f, "".join(json.dumps({"ts": ts, **c}) + "\n" for c in calls))
         return used + len(calls)
 
 
 def append_result(path: str, record: Dict[str, Any]) -> None:
     with locked(path) as f:
-        f.write(json.dumps(record) + "\n")
+        _append(f, json.dumps(record) + "\n")
 
 
 def read_results(path: str) -> Tuple[List[Dict[str, Any]], int]:
