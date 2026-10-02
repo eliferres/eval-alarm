@@ -78,7 +78,7 @@ Each case's `expected.json` names one scorer. A score runs from 0 to 1, and part
 ```
 
 - `prompt` is a template; each case's `prompt.md` replaces its `{{case}}` placeholder. Without a template the case text is sent as it is. A template with no placeholder is refused, because it would send every case the same text.
-- `covers` lists the files and folders whose edits should force a re-score. It defaults to the template. Paths in `suite.json` resolve against the suite folder.
+- `covers` lists the files and folders whose edits should force a re-score. It defaults to the template. Paths in `suite.json` resolve against the suite folder. Linked folders inside a covered folder are followed.
 - `runs` is how many times each case is sent. It defaults to 3 so every run has a spread to compare.
 - `window` is how many earlier scored runs form the baseline.
 

@@ -157,8 +157,16 @@ def _files(folder: str, rel: str) -> List[tuple]:
         return [(rel.replace(os.sep, "/"), target)]
     if not os.path.isdir(target):
         return []
-    found = []
-    for root, dirs, files in os.walk(target):
+    found, seen = [], set()
+    # Linked folders are followed, since a skill often links shared files in
+    # and an edit there changes what the model sees. A folder already walked
+    # (by its real path) is not entered again, so a link to a parent ends.
+    for root, dirs, files in os.walk(target, followlinks=True):
+        real = os.path.realpath(root)
+        if real in seen:
+            dirs[:] = []
+            continue
+        seen.add(real)
         dirs[:] = sorted(d for d in dirs if d not in SKIP_DIRS)
         for f in sorted(files):
             full = os.path.join(root, f)

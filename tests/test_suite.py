@@ -91,6 +91,19 @@ class TestFingerprint(unittest.TestCase):
         after = fingerprint(load(self.folder))
         self.assertEqual([k for k in before if before[k] != after[k]], ["../skill/refs/a.md"])
 
+    def test_an_edit_inside_a_linked_folder_changes_the_fingerprint(self) -> None:
+        write(os.path.join(self.root, "shared", "tone.md"), "calm")
+        os.symlink(os.path.join(self.root, "shared"), os.path.join(self.root, "skill", "shared"))
+        before = fingerprint(load(self.folder))
+        self.assertIn("../skill/shared/tone.md", before)
+        write(os.path.join(self.root, "shared", "tone.md"), "brisk")
+        self.assertNotEqual(fingerprint(load(self.folder)), before)
+
+    def test_a_link_back_to_its_own_parent_does_not_loop(self) -> None:
+        os.symlink(os.path.join(self.root, "skill"), os.path.join(self.root, "skill", "refs", "up"))
+        prints = fingerprint(load(self.folder))
+        self.assertEqual(sorted(prints), ["../notes.md", "../skill/SKILL.md", "../skill/refs/a.md"])
+
     def test_a_missing_cover_is_refused_before_a_run_and_absent_for_verify(self) -> None:
         os.remove(os.path.join(self.root, "notes.md"))
         suite = load(self.folder)
