@@ -15,5 +15,5 @@ All notable changes to this project are documented in this file. The format is b
 - `eval-alarm check` raises DROP, SLIDE and WIDER alarms against the suite's own recent runs, and reports "baseline building" until there are enough of them.
 - A warning when a suite is too small for its alarm margins, so that one wrong answer could raise an alarm on its own.
 - `eval-alarm verify` fails when a file the suite covers (its template, its own cases and suite.json, and any `covers` paths) changed since its last scored run, naming the file.
-- `--json` output for `check` and `verify`, and exit codes 0, 1 and 2 for CI.
+- `--json` output for `check` and `verify`, and exit codes 0, 1 and 2 for CI; Ctrl-C stops the model call in flight and exits 130.
 - An offline demo suite with a stand-in model, replayed by the test suite on every push.
