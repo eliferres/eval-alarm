@@ -96,6 +96,14 @@ class TestCommand(unittest.TestCase):
         self.assertEqual(done.returncode, 0)
         self.assertIn("1 unreadable line(s) in results.jsonl skipped", done.stdout)
 
+    def test_a_results_line_that_is_not_utf8_is_skipped(self) -> None:
+        self.score("positive", "negative")
+        with open(os.path.join(self.suite, "results.jsonl"), "ab") as f:
+            f.write(b"\xff\n")
+        done = self.cli("check", self.suite)
+        self.assertEqual((done.returncode, done.stderr), (0, ""))
+        self.assertIn("1 unreadable line(s) in results.jsonl skipped", done.stdout)
+
     def test_verify_refuses_an_edit_that_was_never_rescored(self) -> None:
         self.assertEqual(self.cli("verify", self.suite).returncode, 1)  # never scored
         self.score("positive", "negative")

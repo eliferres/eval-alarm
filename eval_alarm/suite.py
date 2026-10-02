@@ -110,6 +110,8 @@ def load(folder: str) -> Dict[str, Any]:
                 template = f.read()
         except OSError:
             raise SuiteError(f"{config}: prompt {settings['prompt']} cannot be read") from None
+        except UnicodeDecodeError:
+            raise SuiteError(f"{config}: prompt {settings['prompt']} is not UTF-8 text") from None
         if CASE_PLACEHOLDER not in template:
             # Without the placeholder every case would send the same text and
             # the cases would silently stop being tested.
@@ -133,6 +135,8 @@ def load(folder: str) -> Dict[str, Any]:
                 text = f.read()
         except OSError:
             raise SuiteError(f"case {where} has no readable prompt.md") from None
+        except UnicodeDecodeError:
+            raise SuiteError(f"case {where}: prompt.md is not UTF-8 text") from None
         expected = _read_json(os.path.join(where, "expected.json"), f"{where}/expected.json")
         try:
             scorers.validate(expected)

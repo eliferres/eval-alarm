@@ -45,7 +45,9 @@ def locked(path: str, shared: bool = False) -> Iterator[Any]:
     checkout can still be checked; exclusive (and created) for a write."""
     if not shared:
         os.makedirs(os.path.dirname(os.path.abspath(path)), exist_ok=True)
-    with open(path, "r" if shared else "a+", encoding="utf-8") as f:
+    # errors="replace": a line with bad bytes then fails to parse as JSON and
+    # is skipped like any other torn line, instead of stopping the reader.
+    with open(path, "r" if shared else "a+", encoding="utf-8", errors="replace") as f:
         fcntl.flock(f, fcntl.LOCK_SH if shared else fcntl.LOCK_EX)
         try:
             yield f

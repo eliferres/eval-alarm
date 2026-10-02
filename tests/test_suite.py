@@ -57,6 +57,12 @@ class TestLoad(unittest.TestCase):
         os.makedirs(os.path.join(self.root, "empty"))
         self.assertRefused(os.path.join(self.root, "empty"), "has no cases")
 
+    def test_a_prompt_that_is_not_utf8_is_refused_by_name(self) -> None:
+        folder = make_suite(self.root)
+        with open(os.path.join(folder, "cases", "praise", "prompt.md"), "wb") as f:
+            f.write(b"\xff\xfe")
+        self.assertRefused(folder, "is not UTF-8 text")
+
     def test_suite_json_that_is_not_json(self) -> None:
         folder = make_suite(self.root)
         write(os.path.join(folder, "suite.json"), "{runs: 3")
