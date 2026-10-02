@@ -93,6 +93,13 @@ class TestDemoTranscript(unittest.TestCase):
                 self.assertEqual(got["out"], rec["out"])
                 self.assertEqual(got["status"], rec["status"])
 
+    def test_the_committed_history_vouches_for_the_demo_files(self) -> None:
+        """A fresh clone's first verify must pass, so the committed runs have
+        to carry the fingerprint of the demo files as they are."""
+        proc = subprocess.run([sys.executable, "-m", "eval_alarm", "verify", "demo/sentiment"], cwd=ROOT,
+                              stdout=subprocess.PIPE, stderr=subprocess.STDOUT, text=True)
+        self.assertEqual((proc.returncode, proc.stdout), (0, "sentiment: current (10 covered files unchanged)\n"))
+
     def test_the_picture_draws_the_transcript_in_order(self) -> None:
         """Every drawn row traces back to the transcript: a command's rows
         rejoin to the command, each output row is the next output line (or

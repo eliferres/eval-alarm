@@ -18,7 +18,7 @@ from __future__ import annotations
 import os
 from typing import Any, Dict, List, Optional
 
-from .suite import SuiteError, fingerprint
+from .suite import fingerprint
 
 EPS = 1e-9  # 0.80 - 0.05 must not read as just under 0.75
 
@@ -96,8 +96,6 @@ def verify(suite: Dict[str, Any], records: List[Dict[str, Any]]) -> Dict[str, An
     """Whether every covered file matches the fingerprint of the last run
     that scored every call."""
     name = suite["name"]
-    if not suite["covers"]:
-        raise SuiteError(f"suite {suite['dir']} covers no files; set \"covers\" or \"prompt\" in suite.json")
     last: Optional[Dict[str, Any]] = next((r for r in reversed(records)
                                            if clean(r) and isinstance(r.get("covers"), dict)), None)
     v: Dict[str, Any] = {"suite": name, "changed": [], "added": [], "removed": []}

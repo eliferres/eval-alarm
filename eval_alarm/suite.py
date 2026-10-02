@@ -119,6 +119,10 @@ def load(folder: str) -> Dict[str, Any]:
     covers = settings["covers"]
     if covers is None:
         covers = [settings["prompt"]] if settings["prompt"] else []
+    # The cases and the settings are part of what a score means, so an edit
+    # to either always calls for a re-score, whatever else is covered.
+    covers = covers + [own for own in ("cases", "suite.json")
+                       if own not in covers and os.path.exists(os.path.join(folder, own))]
 
     cases_dir = os.path.join(folder, "cases")
     names = sorted(n for n in os.listdir(cases_dir)

@@ -103,7 +103,8 @@ class TestRun(RunnerCase):
         self.answer("positive", "negative")
         folder = make_suite(self.root, settings={"prompt": "../prompts/p.md"})
         (record,) = self.run_suites([folder], runs=1)
-        self.assertEqual(list(record["covers"]), ["../prompts/p.md"])
+        self.assertEqual(list(record["covers"])[0], "../prompts/p.md")
+        self.assertIn("suite.json", record["covers"])
 
 
 class TestBudget(RunnerCase):

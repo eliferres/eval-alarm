@@ -78,7 +78,7 @@ Each case's `expected.json` names one scorer. A score runs from 0 to 1, and part
 ```
 
 - `prompt` is a template; each case's `prompt.md` replaces its `{{case}}` placeholder. Without a template the case text is sent as it is. A template with no placeholder is refused, because it would send every case the same text.
-- `covers` lists the files and folders whose edits should force a re-score. It defaults to the template. Paths in `suite.json` resolve against the suite folder. Linked folders inside a covered folder are followed.
+- `covers` lists the files and folders whose edits should force a re-score. It defaults to the template. The suite's own `cases/` folder and `suite.json` are always covered, since editing a case or a setting changes what the scores mean. Paths in `suite.json` resolve against the suite folder. Linked folders inside a covered folder are followed.
 - `runs` is how many times each case is sent. It defaults to 3 so every run has a spread to compare.
 - `window` is how many earlier scored runs form the baseline.
 - The margins are fixed numbers, so they only make sense for a suite big enough that one answer weighs less than the margin. One wrong answer moves the mean by 1 / (cases x runs) and the spread by up to 1 / cases. The defaults need at least 10 cases at 3 runs each (30 answers: 0.033 per answer on the mean, 0.10 per case on the spread). A smaller suite gets a warning on stderr every time it loads, naming each margin it is too small for; raise those margins, as the four-case demo suite does, or add cases.
@@ -138,6 +138,5 @@ The sibling project [agent-eval-harness](https://github.com/eliferres/agent-eval
 - The model command runs in your working directory. An agent with file tools can open `expected.json` there; run it with its tools off.
 - `verify` reads files on disk, not the git index, so in a pre-commit hook it sees unstaged edits too.
 - The budget counts calls, not tokens or money, and its ledger is per machine: each CI runner starts with an empty one.
-- Case files are not covered unless you list the `cases` folder in `covers`.
 
 Contributions are welcome under [CONTRIBUTING.md](CONTRIBUTING.md); MIT licensed, see [LICENSE](LICENSE).

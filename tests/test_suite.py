@@ -26,13 +26,13 @@ class TestLoad(unittest.TestCase):
         self.assertEqual(suite["name"], "sentiment")
         self.assertEqual([c["name"] for c in suite["cases"]], ["praise", "refund"])
         self.assertEqual(suite["settings"]["runs"], 3)
-        self.assertEqual(suite["covers"], [])
+        self.assertEqual(suite["covers"], ["cases"])
 
     def test_the_template_wraps_each_case_and_is_covered_by_default(self) -> None:
         write(os.path.join(self.root, "prompts", "label.md"), "Label this:\n{{case}}\n")
         suite = load(make_suite(self.root, settings={"prompt": "../prompts/label.md"}))
         self.assertEqual(suite["cases"][0]["prompt"], "Label this:\nI love it\n")
-        self.assertEqual(suite["covers"], ["../prompts/label.md"])
+        self.assertEqual(suite["covers"], ["../prompts/label.md", "cases", "suite.json"])
 
     def test_a_template_without_the_placeholder_is_refused(self) -> None:
         write(os.path.join(self.root, "prompts", "label.md"), "Label this.\n")
@@ -100,7 +100,13 @@ class TestFingerprint(unittest.TestCase):
 
     def test_folders_expand_to_their_files(self) -> None:
         prints = fingerprint(load(self.folder))
-        self.assertEqual(sorted(prints), ["../notes.md", "../skill/SKILL.md", "../skill/refs/a.md"])
+        self.assertEqual([p for p in sorted(prints) if p.startswith("..")],
+                         ["../notes.md", "../skill/SKILL.md", "../skill/refs/a.md"])
+
+    def test_the_cases_and_suite_json_are_always_covered(self) -> None:
+        prints = fingerprint(load(self.folder))
+        self.assertIn("cases/praise/expected.json", prints)
+        self.assertIn("suite.json", prints)
 
     def test_an_edit_changes_only_that_file(self) -> None:
         before = fingerprint(load(self.folder))
@@ -119,7 +125,8 @@ class TestFingerprint(unittest.TestCase):
     def test_a_link_back_to_its_own_parent_does_not_loop(self) -> None:
         os.symlink(os.path.join(self.root, "skill"), os.path.join(self.root, "skill", "refs", "up"))
         prints = fingerprint(load(self.folder))
-        self.assertEqual(sorted(prints), ["../notes.md", "../skill/SKILL.md", "../skill/refs/a.md"])
+        self.assertEqual([p for p in sorted(prints) if p.startswith("..")],
+                         ["../notes.md", "../skill/SKILL.md", "../skill/refs/a.md"])
 
     def test_a_missing_cover_is_refused_before_a_run_and_absent_for_verify(self) -> None:
         os.remove(os.path.join(self.root, "notes.md"))

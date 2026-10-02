@@ -6,7 +6,7 @@ import unittest
 from typing import Optional
 
 from eval_alarm.alarm import judge, usable, verify
-from eval_alarm.suite import DEFAULTS, SuiteError, fingerprint, load
+from eval_alarm.suite import DEFAULTS, fingerprint, load
 from helpers import make_suite, write
 
 CFG = dict(DEFAULTS["alarm"])  # window 5, min_baseline 3, drop 0.05, slide 0.10, spread 0.10
@@ -87,13 +87,19 @@ class TestVerify(unittest.TestCase):
 
     def test_unchanged_files_are_current(self) -> None:
         v = verify(self.suite, [self.scored])
-        self.assertEqual(v["lines"], ["sentiment: current (2 covered files unchanged)"])
+        self.assertEqual(v["lines"], ["sentiment: current (7 covered files unchanged)"])
 
     def test_an_edit_is_stale_and_named(self) -> None:
         write(os.path.join(self.root, "prompts", "p.md"), "Classify: {{case}}")
         v = verify(self.suite, [self.scored])
         self.assertEqual(v["status"], "stale")
         self.assertEqual(v["changed"], [os.path.join(self.root, "prompts", "p.md")])
+
+    def test_an_edited_case_is_stale(self) -> None:
+        write(os.path.join(self.folder, "cases", "praise", "expected.json"),
+              '{"scorer": "exact", "expected": "neutral"}')
+        v = verify(self.suite, [self.scored])
+        self.assertEqual(v["changed"], [os.path.join(self.folder, "cases", "praise", "expected.json")])
 
     def test_added_and_removed_files_are_stale(self) -> None:
         os.remove(os.path.join(self.root, "prompts", "extra.md"))
@@ -113,10 +119,6 @@ class TestVerify(unittest.TestCase):
 
     def test_never_scored(self) -> None:
         self.assertEqual(verify(self.suite, [])["status"], "never scored")
-
-    def test_a_suite_covering_nothing_is_a_configuration_error(self) -> None:
-        with self.assertRaisesRegex(SuiteError, "covers no files"):
-            verify(load(make_suite(self.root, "bare")), [])
 
 
 if __name__ == "__main__":
