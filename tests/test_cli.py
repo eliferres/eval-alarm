@@ -3,15 +3,25 @@ from __future__ import annotations
 
 import json
 import os
+import signal
 import subprocess
 import sys
 import tempfile
+import time
 import unittest
 
 from helpers import make_suite, write
 
 ROOT = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
 FAKE = os.path.join(ROOT, "tests", "fake_model.py")
+
+
+def alive(pid: int) -> bool:
+    try:
+        os.kill(pid, 0)
+    except ProcessLookupError:
+        return False
+    return True
 
 
 class TestCommand(unittest.TestCase):
@@ -72,6 +82,25 @@ class TestCommand(unittest.TestCase):
         self.assertEqual(done.returncode, 2)
         self.assertEqual(len(done.stderr.splitlines()), 1)
         self.assertNotIn("Traceback", done.stderr)
+
+    def test_ctrl_c_stops_the_model_and_exits_130(self) -> None:
+        write(self.answers, json.dumps(["!hang"]))
+        proc = subprocess.Popen([sys.executable, "-m", "eval_alarm", "run", self.suite], cwd=self.root,
+                                env=self.env, stdout=subprocess.PIPE, stderr=subprocess.PIPE, text=True)
+        pid_file = self.answers + ".pid"
+        deadline = time.monotonic() + 10
+        while not os.path.exists(pid_file) and time.monotonic() < deadline:
+            time.sleep(0.05)
+        time.sleep(0.1)
+        with open(pid_file, encoding="utf-8") as f:
+            model_pid = int(f.read())
+        proc.send_signal(signal.SIGINT)
+        _, err = proc.communicate(timeout=10)
+        self.assertEqual((proc.returncode, err), (130, "eval-alarm: interrupted\n"))
+        deadline = time.monotonic() + 5
+        while alive(model_pid) and time.monotonic() < deadline:
+            time.sleep(0.05)
+        self.assertFalse(alive(model_pid), "the model process outlived the interrupt")
 
     def test_check_exits_one_on_an_alarm(self) -> None:
         for _ in range(3):

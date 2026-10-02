@@ -2,8 +2,8 @@
 
 FAKE_ANSWERS names a JSON list of answers handed out in order, one per
 call; the position is kept in FAKE_ANSWERS + ".n". Two answers act instead
-of printing: "!fail" exits 3 with a message on stderr, "!hang" sleeps past
-any test timeout. Every prompt received is appended to FAKE_ANSWERS +
+of printing: "!fail" exits 3 with a message on stderr, "!hang" writes its
+process id to FAKE_ANSWERS + ".pid" and sleeps past any test timeout. Every prompt received is appended to FAKE_ANSWERS +
 ".prompts" so a test can see what was sent.
 """
 import json
@@ -28,5 +28,7 @@ if answer == "!fail":
     print("model unavailable", file=sys.stderr)
     sys.exit(3)
 if answer == "!hang":
+    with open(path + ".pid", "w", encoding="utf-8") as f:
+        f.write(str(os.getpid()))
     time.sleep(30)
 print(answer)

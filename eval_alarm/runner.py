@@ -44,6 +44,15 @@ def plan(suite: Dict[str, Any], settings: Dict[str, Any]) -> List[Tuple[str, int
     return [(case["name"], n) for case in suite["cases"] for n in range(1, settings["runs"] + 1)]
 
 
+def _kill(proc: subprocess.Popen) -> None:
+    """Kill the model's whole process group: agent CLIs start children of
+    their own, and killing only the parent leaves them holding the pipes."""
+    try:
+        os.killpg(proc.pid, signal.SIGKILL)
+    except OSError:
+        pass
+
+
 def call_model(argv: List[str], prompt: str, timeout: int) -> Tuple[str, Optional[str]]:
     """(answer, None) or (whatever was printed, why the call failed)."""
     try:
@@ -54,14 +63,15 @@ def call_model(argv: List[str], prompt: str, timeout: int) -> Tuple[str, Optiona
     try:
         out, err = proc.communicate(prompt.encode("utf-8"), timeout=timeout)
     except subprocess.TimeoutExpired:
-        # Kill the whole process group: agent CLIs start children of their
-        # own, and killing only the parent leaves them holding the pipes.
-        try:
-            os.killpg(proc.pid, signal.SIGKILL)
-        except OSError:
-            pass
+        _kill(proc)
         out, _ = proc.communicate()
         return out.decode("utf-8", "replace"), f"timed out after {timeout}s"
+    except KeyboardInterrupt:
+        # The model runs in its own session, so Ctrl-C never reaches it;
+        # without this it would keep running, and spending, after we exit.
+        _kill(proc)
+        proc.wait()
+        raise
     if proc.returncode != 0:
         last = (err.decode("utf-8", "replace").strip().splitlines() or [""])[-1][:200]
         return out.decode("utf-8", "replace"), f"exited {proc.returncode}" + (f": {last}" if last else "")

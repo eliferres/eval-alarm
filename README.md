@@ -100,6 +100,7 @@ eval-alarm --version
 | 0 | Clean: the run scored every call, no alarm, every covered file current |
 | 1 | Findings: an alarm, an incomplete run, a stale or never-scored suite, a failed model call, or a run refused by the budget |
 | 2 | Usage or configuration error, one line on stderr |
+| 130 | Interrupted with Ctrl-C; the model call in flight is killed and the run is not recorded, though its reserved calls still count against the budget |
 
 In CI, `verify` on every suite stops a prompt edit that arrived without a fresh run, and `check` stops one whose fresh run scored worse:
 

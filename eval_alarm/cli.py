@@ -1,7 +1,8 @@
 """The eval-alarm command: run, check and verify.
 
 Exit codes: 0 clean, 1 findings (an alarm, a stale suite, a failed call or
-a run refused by the budget), 2 usage or configuration error.
+a run refused by the budget), 2 usage or configuration error, 130 when
+interrupted with Ctrl-C.
 """
 from __future__ import annotations
 
@@ -123,3 +124,6 @@ def main(argv: Optional[List[str]] = None) -> int:
     except OSError as e:
         print(f"{PROG}: {e.filename or 'a file'}: {e.strerror}", file=sys.stderr)
         return 2
+    except KeyboardInterrupt:
+        print(f"{PROG}: interrupted", file=sys.stderr)
+        return 130
