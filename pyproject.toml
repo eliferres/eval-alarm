@@ -1,0 +1,25 @@
+[build-system]
+requires = ["setuptools>=77"]
+build-backend = "setuptools.build_meta"
+
+[project]
+name = "eval-alarm"
+dynamic = ["version"]
+description = "Regression alarms for prompts, skills and agent instructions, judged on their own history"
+readme = "README.md"
+requires-python = ">=3.9"
+license = "MIT"
+authors = [{ name = "Eli Ferres" }]
+
+[project.urls]
+Source = "https://github.com/eliferres/eval-alarm"
+Changelog = "https://github.com/eliferres/eval-alarm/blob/main/CHANGELOG.md"
+
+[project.scripts]
+eval-alarm = "eval_alarm:main"
+
+[tool.setuptools]
+packages = ["eval_alarm"]
+
+[tool.setuptools.dynamic]
+version = { attr = "eval_alarm.__version__" }
