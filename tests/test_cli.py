@@ -66,6 +66,14 @@ class TestCommand(unittest.TestCase):
         self.assertEqual(done.returncode, 0)
         self.assertIn("eval-alarm: warning: sentiment: drop_margin 0.05 is below one answer's weight", done.stderr)
 
+    def test_runs_from_the_command_line_feed_the_margin_warning(self) -> None:
+        cases = {f"c{i}": ("x", {"scorer": "exact", "expected": "y"}) for i in range(10)}
+        big = make_suite(self.root, "big", settings={"command": "true"}, cases=cases)
+        self.assertEqual(self.cli("run", big, "--dry").stderr, "")
+        done = self.cli("run", big, "--dry", "--runs", "1")
+        self.assertIn("eval-alarm: warning: big: drop_margin 0.05 is below one answer's weight on the mean "
+                      "(1/10 = 0.10)", done.stderr)
+
     def test_over_budget_exits_one_with_one_line(self) -> None:
         write(self.answers, json.dumps(["positive", "negative"]))
         done = self.cli("run", self.suite, "--budget", "1")

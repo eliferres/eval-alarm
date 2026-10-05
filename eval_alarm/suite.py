@@ -150,10 +150,10 @@ def load(folder: str) -> Dict[str, Any]:
         cases.append({"name": case, "prompt": prompt, "expected": expected})
 
     return {"name": name, "dir": folder, "settings": settings, "cases": cases, "covers": covers,
-            "warnings": _margin_warnings(name, settings, len(cases))}
+            "warnings": margin_warnings(name, settings, len(cases))}
 
 
-def _margin_warnings(name: str, settings: Dict[str, Any], cases: int) -> List[str]:
+def margin_warnings(name: str, settings: Dict[str, Any], cases: int) -> List[str]:
     """One line per margin finer than a single answer. One wrong answer
     moves the mean by 1/(cases x runs) and, read more than once, moves its
     case's spread by up to 1, which is 1/cases of the suite's spread. A

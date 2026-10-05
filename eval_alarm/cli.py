@@ -15,7 +15,7 @@ import sys
 from typing import Callable, List, Optional
 
 from . import __version__, alarm, ledger, runner
-from .suite import SuiteError, load
+from .suite import SuiteError, load, margin_warnings
 
 PROG = "eval-alarm"
 
@@ -64,8 +64,13 @@ def parser() -> argparse.ArgumentParser:
     return p
 
 
-def _load(folder: str) -> dict:
+def _load(folder: str, runs: Optional[int] = None) -> dict:
+    """Load a suite and print its margin warnings, worked out for the runs
+    this command will make: a --runs override changes each answer's weight."""
     suite = load(folder)
+    if runs:
+        settings = {**suite["settings"], "runs": runs}
+        suite["warnings"] = margin_warnings(suite["name"], settings, len(suite["cases"]))
     for warning in suite["warnings"]:
         print(f"{PROG}: warning: {warning}", file=sys.stderr, flush=True)
     return suite
@@ -79,7 +84,7 @@ def _history(suite: dict) -> tuple:
 
 def cmd_run(args: argparse.Namespace, say: Callable[[str], None]) -> int:
     budget = _budget(args.budget if args.budget is not None else os.environ.get("EVAL_ALARM_BUDGET"))
-    suites = [_load(s) for s in args.suites]
+    suites = [_load(s, args.runs) for s in args.suites]
     overrides = {"command": args.cmd, "model": args.model, "runs": args.runs}
     now = datetime.datetime.now(datetime.timezone.utc)
     try:
