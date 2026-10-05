@@ -1,7 +1,8 @@
-<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 660 772" role="img" aria-labelledby="t d" font-family="SF Mono, Menlo, Consolas, monospace" font-size="16">
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 660 772" role="img" aria-labelledby="t d" font-family="SF Mono, Menlo, Consolas, monospace" font-size="16" xml:space="preserve">
   <title id="t">eval-alarm: a prompt edit caught by its own history</title>
   <desc id="d">A sentiment suite scores 0.75 and holds steady against its committed history. A one-line edit drops the prompt's format instruction; verify names the edited file as never re-scored, the re-run scores 0.25, and check raises DROP and SLIDE alarms with exit 1.</desc>
   <style>
+    text { white-space: pre; }
     .p { fill: #7ee2a8; }
     .cmd { fill: #e8eef5; }
     .dim { fill: #9fb0c0; }
