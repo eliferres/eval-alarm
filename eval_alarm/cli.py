@@ -2,7 +2,7 @@
 
 Exit codes: 0 clean, 1 findings (an alarm, a stale suite, a failed call or
 a run refused by the budget), 2 usage or configuration error, 130 when
-interrupted with Ctrl-C.
+interrupted with Ctrl-C, 143 when stopped with SIGTERM.
 """
 from __future__ import annotations
 
@@ -11,6 +11,7 @@ import datetime
 import functools
 import json
 import os
+import signal
 import sys
 from typing import Callable, List, Optional
 
@@ -122,12 +123,17 @@ def cmd_review(args: argparse.Namespace, say: Callable[[str], None]) -> int:
     return 1 if any(v["finding"] for v in verdicts) else 0
 
 
+def _terminate(signum: int, frame: object) -> None:
+    raise runner.Terminated()
+
+
 def main(argv: Optional[List[str]] = None) -> int:
     args = parser().parse_args(argv)
     if args.command is None:
         parser().print_usage(sys.stderr)
         return 2
     say = functools.partial(print, flush=True)  # flushed, so progress shows during a long run
+    signal.signal(signal.SIGTERM, _terminate)
     try:
         return cmd_run(args, say) if args.command == "run" else cmd_review(args, say)
     except SuiteError as e:
@@ -139,3 +145,6 @@ def main(argv: Optional[List[str]] = None) -> int:
     except KeyboardInterrupt:
         print(f"{PROG}: interrupted", file=sys.stderr)
         return 130
+    except runner.Terminated:
+        print(f"{PROG}: terminated", file=sys.stderr)
+        return 143

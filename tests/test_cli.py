@@ -96,7 +96,9 @@ class TestCommand(unittest.TestCase):
         self.assertEqual(len(done.stderr.splitlines()), 1)
         self.assertNotIn("Traceback", done.stderr)
 
-    def test_ctrl_c_stops_the_model_and_exits_130(self) -> None:
+    def interrupt_a_hung_run(self, sig: int) -> tuple:
+        """Start a run whose model hangs, send sig once the model is up, and
+        return (exit code, last stderr line, model pid)."""
         write(self.answers, json.dumps(["!hang"]))
         proc = subprocess.Popen([sys.executable, "-m", "eval_alarm", "run", self.suite], cwd=self.root,
                                 env=self.env, stdout=subprocess.PIPE, stderr=subprocess.PIPE, text=True)
@@ -107,13 +109,22 @@ class TestCommand(unittest.TestCase):
         time.sleep(0.1)
         with open(pid_file, encoding="utf-8") as f:
             model_pid = int(f.read())
-        proc.send_signal(signal.SIGINT)
+        proc.send_signal(sig)
         _, err = proc.communicate(timeout=10)
-        self.assertEqual((proc.returncode, err.splitlines()[-1]), (130, "eval-alarm: interrupted"))
         deadline = time.monotonic() + 5
         while alive(model_pid) and time.monotonic() < deadline:
             time.sleep(0.05)
+        return proc.returncode, err.splitlines()[-1], model_pid
+
+    def test_ctrl_c_stops_the_model_and_exits_130(self) -> None:
+        code, last, model_pid = self.interrupt_a_hung_run(signal.SIGINT)
+        self.assertEqual((code, last), (130, "eval-alarm: interrupted"))
         self.assertFalse(alive(model_pid), "the model process outlived the interrupt")
+
+    def test_sigterm_stops_the_model_and_exits_143(self) -> None:
+        code, last, model_pid = self.interrupt_a_hung_run(signal.SIGTERM)
+        self.assertEqual((code, last), (143, "eval-alarm: terminated"))
+        self.assertFalse(alive(model_pid), "the model process outlived the termination")
 
     def test_check_exits_one_on_an_alarm(self) -> None:
         for _ in range(3):

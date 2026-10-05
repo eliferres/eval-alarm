@@ -45,6 +45,11 @@ def plan(suite: Dict[str, Any], settings: Dict[str, Any]) -> List[Tuple[str, int
     return [(case["name"], n) for case in suite["cases"] for n in range(1, settings["runs"] + 1)]
 
 
+class Terminated(BaseException):
+    """Raised by the command's SIGTERM handler. A BaseException, like
+    KeyboardInterrupt, so no ordinary except clause swallows it."""
+
+
 def _kill(proc: subprocess.Popen) -> None:
     """Kill the model's whole process group: agent CLIs start children of
     their own, and killing only the parent leaves them holding the pipes."""
@@ -67,9 +72,10 @@ def call_model(argv: List[str], prompt: str, timeout: int) -> Tuple[str, Optiona
         _kill(proc)
         out, _ = proc.communicate()
         return out.decode("utf-8", "replace"), f"timed out after {timeout}s"
-    except KeyboardInterrupt:
-        # The model runs in its own session, so Ctrl-C never reaches it;
-        # without this it would keep running, and spending, after we exit.
+    except (KeyboardInterrupt, Terminated):
+        # The model runs in its own session, so neither Ctrl-C nor a signal
+        # sent to us reaches it; without this it would keep running, and
+        # spending, after we exit.
         _kill(proc)
         proc.wait()
         raise
