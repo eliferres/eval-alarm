@@ -12,16 +12,18 @@ jobs:
       matrix:
         os: [ubuntu-latest, macos-latest]
         python: ["3.9", "3.11", "3.13"]
-    env:
-      EVAL_ALARM_STATE_DIR: ${{ runner.temp }}/eval-alarm-state
     steps:
       - uses: actions/checkout@v4
       - uses: actions/setup-python@v5
         with:
           python-version: ${{ matrix.python }}
       - name: Run tests
+        env:
+          EVAL_ALARM_STATE_DIR: ${{ runner.temp }}/eval-alarm-state
         run: python -m unittest discover -s tests -v
       - name: Score the demo suite, then catch a regression
+        env:
+          EVAL_ALARM_STATE_DIR: ${{ runner.temp }}/eval-alarm-state
         run: |
           python -m eval_alarm run demo/sentiment
           python -m eval_alarm check demo/sentiment
@@ -35,6 +37,8 @@ jobs:
           git checkout -- demo
           rm demo/prompts/sentiment.md.bak
       - name: Install and run the console script
+        env:
+          EVAL_ALARM_STATE_DIR: ${{ runner.temp }}/eval-alarm-state
         run: |
           python -m pip install .
           eval-alarm --version
