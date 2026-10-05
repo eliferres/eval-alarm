@@ -1,0 +1,8 @@
+# LEVEL — P11 stack law v3 (0 probe, 1 owned product, 2 connected system, 3 platform)
+level: 1
+owner: Eli Ferres
+monitor: GitHub Actions on every push
+rollback: git revert and re-tag
+migrations: n/a: no state beyond JSONL files the user owns
+backups: n/a: no hosted state
+authz: n/a: no trust boundary, a local command-line tool
