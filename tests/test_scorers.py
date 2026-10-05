@@ -99,8 +99,14 @@ class TestValidate(unittest.TestCase):
         self.assertInvalid({"scorer": "contains", "expected": ["refund", ""]}, "empty string")
 
     def test_a_pattern_that_matches_nothing_at_all_is_refused(self) -> None:
-        self.assertInvalid({"scorer": "regex", "patterns": [".*"]}, "matches an empty answer")
-        self.assertInvalid({"scorer": "regex", "must_not": ["x?"]}, "matches an empty answer")
+        self.assertInvalid({"scorer": "regex", "patterns": [".*"]}, "matches any answer")
+        self.assertInvalid({"scorer": "regex", "must_not": ["x?"]}, "matches any answer")
+
+    def test_a_blank_answer_check_is_accepted(self) -> None:
+        exp = {"scorer": "regex", "must_not": [r"^\s*$"]}
+        validate(exp)
+        self.assertEqual(score("   \n", exp), 0.0)
+        self.assertEqual(score("VERDICT: PASS", exp), 1.0)
 
     def test_regex_with_no_checks(self) -> None:
         self.assertInvalid({"scorer": "regex"}, "nothing would be scored")

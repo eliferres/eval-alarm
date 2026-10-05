@@ -41,6 +41,9 @@ TYPES: Dict[str, Callable[[Any], bool]] = {
     "object": lambda v: isinstance(v, dict),
     "null": lambda v: v is None,
 }
+# An empty answer plus a few unrelated ones: a pattern found in all of
+# them would be found in anything.
+MATCH_PROBES = ("", "hello", "VERDICT: PASS", "x")
 FENCE = re.compile(r"^```(?:json)?[ \t]*\n(.*)\n```$", re.S)
 
 
@@ -56,15 +59,18 @@ def _strings(exp: dict, key: str, allow_empty: bool = False) -> List[str]:
 
 def _patterns(exp: dict, key: str) -> List[str]:
     items = _strings(exp, key, allow_empty=True)
+    flags = re.I if exp.get("ignore_case") is True else 0
     for p in items:
         try:
-            matches_nothing = re.search(p, "") is not None
+            matches_all = all(re.search(p, probe, flags) for probe in MATCH_PROBES)
         except re.error as e:
             raise ValueError(f"{key} pattern {p!r} does not compile ({e})") from None
-        if matches_nothing:
-            # Such a pattern is found in every answer, so it would score the
-            # same whatever the model said.
-            raise ValueError(f"{key} pattern {p!r} matches an empty answer, so it tests nothing")
+        if matches_all:
+            # Found in an empty answer and in unrelated ones alike, so it would
+            # score the same whatever the model said. A pattern that matches
+            # only the empty answer, such as ^\s*$ for "not blank", is useful.
+            raise ValueError(f"{key} pattern {p!r} matches any answer, even an empty one, "
+                             "so it tests nothing")
     return items
 
 

@@ -56,7 +56,7 @@ Each case's `expected.json` names one scorer. A score runs from 0 to 1, and part
 |---|---|---|
 | `exact` | `expected`: a string or a list of accepted strings; `ignore_case` | 1 when the trimmed answer equals one of them, else 0 |
 | `contains` | `expected`: a non-empty string or a list of them; `ignore_case` | the share of strings found in the answer |
-| `regex` | `patterns` that must be found, `must_not` that must not; `ignore_case`. `^` and `$` anchor the whole trimmed answer; start a pattern with `(?m)` to anchor per line. A pattern that matches an empty answer is refused, since it tests nothing | the share of those checks that pass |
+| `regex` | `patterns` that must be found, `must_not` that must not; `ignore_case`. `^` and `$` anchor the whole trimmed answer; start a pattern with `(?m)` to anchor per line. A pattern that matches any answer, an empty one included (such as `.*`), is refused because it tests nothing; one that matches only a blank answer, such as `^\s*$` under `must_not`, is fine | the share of those checks that pass |
 | `json` | `shape`: key to type (`string`, `number`, `integer`, `boolean`, `array`, `object`, `null`); `fields`: key to exact value, compared strictly (`true` is not `1`) | 0 when the answer is not JSON (one fenced block is unwrapped), else the share of checks that pass |
 
 `suite.json`, every key optional:
