@@ -126,6 +126,14 @@ class TestFingerprint(unittest.TestCase):
             write(os.path.join(state, "budget.jsonl"), "{}\n")
             self.assertEqual(fingerprint(load(folder)), before)
 
+    def test_a_dangling_link_is_named_as_a_link(self) -> None:
+        link = os.path.join(self.folder, "cases", "praise", "notes.md")
+        os.symlink(os.path.join(self.root, "gone.md"), link)
+        with self.assertRaises(SuiteError) as caught:
+            fingerprint(load(self.folder))
+        self.assertIn(f"{link} is a link to {os.path.join(self.root, 'gone.md')}, which does not exist",
+                      str(caught.exception))
+
     def test_an_edit_changes_only_that_file(self) -> None:
         before = fingerprint(load(self.folder))
         write(os.path.join(self.root, "skill", "refs", "a.md"), "two, edited")

@@ -214,6 +214,8 @@ def fingerprint(suite: Dict[str, Any], strict: bool = True) -> Dict[str, str]:
         if not files and strict:
             raise SuiteError(f"suite {suite['dir']}: covers names {rel}, which does not exist")
         for recorded, full in files:
+            if os.path.islink(full) and not os.path.exists(full):
+                raise SuiteError(f"{full} is a link to {os.readlink(full)}, which does not exist")
             with open(full, "rb") as f:
                 prints[recorded] = hashlib.sha256(f.read()).hexdigest()
     return prints

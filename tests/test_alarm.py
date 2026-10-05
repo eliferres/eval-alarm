@@ -56,6 +56,7 @@ class TestJudge(unittest.TestCase):
     def test_a_wholly_failed_latest_run_is_incomplete_not_a_drop(self) -> None:
         v = judge("s", [rec(0.9)] * 3 + [rec(None, failed=6)], CFG)
         self.assertEqual((v["status"], v["alarms"], v["finding"]), ("incomplete", [], True))
+        self.assertEqual(v["lines"], ["INCOMPLETE s: 6 calls failed; nothing was scored"])
 
     def test_a_partly_failed_run_is_incomplete_even_when_its_mean_looks_fine(self) -> None:
         v = judge("s", [rec(1.0)] * 3 + [rec(1.0, failed=9)], CFG)

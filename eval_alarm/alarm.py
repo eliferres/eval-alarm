@@ -55,10 +55,10 @@ def judge(name: str, records: List[Dict[str, Any]], cfg: Dict[str, Any]) -> Dict
         # A run with failed calls is a finding of its own: it cannot be
         # compared, and a quiet exit would let it pass CI as healthy.
         failed = latest.get("failed") or 0
-        mean = "no score" if latest.get("mean") is None else f"mean {latest['mean']:.2f}"
+        outcome = ("nothing was scored" if latest.get("mean") is None
+                   else f"mean {latest['mean']:.2f} is not compared")
         v.update(status="incomplete", finding=True)
-        v["lines"].append(f"INCOMPLETE {name}: {failed} call{'' if failed == 1 else 's'} failed; "
-                          f"{mean} is not compared")
+        v["lines"].append(f"INCOMPLETE {name}: {failed} call{'' if failed == 1 else 's'} failed; {outcome}")
         return v
     if len(earlier) < cfg["min_baseline"]:
         v["status"] = "baseline building"
