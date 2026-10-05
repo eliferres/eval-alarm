@@ -108,6 +108,13 @@ class TestFingerprint(unittest.TestCase):
         self.assertIn("cases/praise/expected.json", prints)
         self.assertIn("suite.json", prints)
 
+    def test_hidden_files_are_left_out(self) -> None:
+        before = fingerprint(load(self.folder))
+        write(os.path.join(self.folder, "cases", "praise", ".DS_Store"), "finder")
+        write(os.path.join(self.root, "skill", ".SKILL.md.swp"), "editor")
+        write(os.path.join(self.root, "skill", ".cache", "x"), "tool")
+        self.assertEqual(fingerprint(load(self.folder)), before)
+
     def test_an_edit_changes_only_that_file(self) -> None:
         before = fingerprint(load(self.folder))
         write(os.path.join(self.root, "skill", "refs", "a.md"), "two, edited")

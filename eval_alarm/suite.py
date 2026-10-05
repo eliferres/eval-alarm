@@ -187,8 +187,10 @@ def _files(folder: str, rel: str) -> List[tuple]:
             dirs[:] = []
             continue
         seen.add(real)
-        dirs[:] = sorted(d for d in dirs if d not in SKIP_DIRS)
-        for f in sorted(files):
+        # Hidden names are editor, OS and tool droppings (.DS_Store, swap
+        # files); a fresh checkout lacks them, so they must not count.
+        dirs[:] = sorted(d for d in dirs if d not in SKIP_DIRS and not d.startswith("."))
+        for f in sorted(f for f in files if not f.startswith(".")):
             full = os.path.join(root, f)
             inner = os.path.relpath(full, target).replace(os.sep, "/")
             found.append((rel.rstrip("/\\").replace(os.sep, "/") + "/" + inner, full))
