@@ -3,6 +3,7 @@ from __future__ import annotations
 import os
 import tempfile
 import unittest
+from unittest import mock
 
 from eval_alarm.suite import SuiteError, fingerprint, load
 from helpers import make_suite, write
@@ -114,6 +115,16 @@ class TestFingerprint(unittest.TestCase):
         write(os.path.join(self.root, "skill", ".SKILL.md.swp"), "editor")
         write(os.path.join(self.root, "skill", ".cache", "x"), "tool")
         self.assertEqual(fingerprint(load(self.folder)), before)
+
+    def test_a_suite_inside_a_covered_folder_leaves_out_its_own_results(self) -> None:
+        folder = make_suite(self.root, "inner", settings={"covers": [".."]})
+        state = os.path.join(self.root, "state")
+        with mock.patch.dict(os.environ, {"EVAL_ALARM_STATE_DIR": state}):
+            before = fingerprint(load(folder))
+            write(os.path.join(folder, "results.jsonl"), '{"mean": 1.0}\n')
+            write(os.path.join(state, "answers", "inner-1", "t", "praise-r1.txt"), "positive")
+            write(os.path.join(state, "budget.jsonl"), "{}\n")
+            self.assertEqual(fingerprint(load(folder)), before)
 
     def test_an_edit_changes_only_that_file(self) -> None:
         before = fingerprint(load(self.folder))

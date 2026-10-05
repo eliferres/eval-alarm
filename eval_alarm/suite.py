@@ -18,7 +18,7 @@ import os
 import re
 from typing import Any, Dict, List
 
-from . import scorers
+from . import ledger, scorers
 
 CASE_PLACEHOLDER = "{{case}}"
 CASE_NAME = re.compile(r"^[A-Za-z0-9][A-Za-z0-9._-]*$")
@@ -202,9 +202,15 @@ def fingerprint(suite: Dict[str, Any], strict: bool = True) -> Dict[str, str]:
     strict refuses a covers entry that names nothing, which is right before a
     run (a typo would fingerprint nothing) and wrong for verify, where a
     deleted file is a change to report."""
+    # The tool's own output changes on every run, so a suite inside a folder
+    # it covers would never verify: its results and the state folder (budget
+    # and saved answers) stay out of the fingerprint.
+    results = os.path.realpath(os.path.join(suite["dir"], "results.jsonl"))
+    state = os.path.realpath(ledger.state_dir()) + os.sep
     prints = {}
     for rel in suite["covers"]:
-        files = _files(suite["dir"], rel)
+        files = [(recorded, full) for recorded, full in _files(suite["dir"], rel)
+                 if os.path.realpath(full) != results and not os.path.realpath(full).startswith(state)]
         if not files and strict:
             raise SuiteError(f"suite {suite['dir']}: covers names {rel}, which does not exist")
         for recorded, full in files:
