@@ -1,6 +1,6 @@
 # eval-alarm
 
-An edit to a prompt, a skill file or an agent's instructions can make the model's answers worse, and nothing fails until a person notices the output. eval-alarm sends a fixed set of cases through your model several times, scores every answer with a deterministic check, keeps the scores, and raises an alarm when the latest run falls below the suite's own recent history.
+eval-alarm runs a fixed set of cases through your model, scores every answer with a deterministic check, and raises an alarm when the latest run falls below the suite's recent history.
 
 ![ci](https://github.com/eliferres/eval-alarm/actions/workflows/ci.yml/badge.svg)
 ![license](https://img.shields.io/badge/license-MIT-blue.svg)
@@ -8,6 +8,10 @@ An edit to a prompt, a skill file or an agent's instructions can make the model'
 ![dependencies](https://img.shields.io/badge/dependencies-none-brightgreen.svg)
 
 <img src="demo/terminal.svg" width="660" alt="Terminal session: a four-case sentiment suite scores 0.75 and check reports it steady against its last three runs. A sed command deletes the prompt's 'Answer with one word' line, verify reports the prompt file as changed since the last scored run and exits 1, the re-run scores 0.25, and check prints DROP and SLIDE alarms and exits 1.">
+
+## What it does
+
+An edit to a prompt, a skill file or an agent's instructions can make the model's answers worse, and nothing fails until a person notices the output. eval-alarm sends a fixed set of cases through your model several times, scores every answer with a deterministic check, keeps the scores, and raises an alarm when the latest run falls below the suite's own recent history.
 
 ## Install
 
