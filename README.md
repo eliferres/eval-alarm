@@ -2,12 +2,14 @@
 
 eval-alarm runs a fixed set of cases through your model, scores every answer with a deterministic check, and raises an alarm when the latest run falls below the suite's recent history.
 
-![ci](https://github.com/eliferres/eval-alarm/actions/workflows/ci.yml/badge.svg)
-![license](https://img.shields.io/badge/license-MIT-blue.svg)
-![python](https://img.shields.io/badge/python-3.9%2B-blue.svg)
-![dependencies](https://img.shields.io/badge/dependencies-none-brightgreen.svg)
+[![ci](https://github.com/eliferres/eval-alarm/actions/workflows/ci.yml/badge.svg)](https://github.com/eliferres/eval-alarm/actions/workflows/ci.yml)
+![license: MIT](https://img.shields.io/badge/license-MIT-blue.svg)
+![python 3.9+](https://img.shields.io/badge/python-3.9%2B-blue.svg)
+![dependencies: none](https://img.shields.io/badge/dependencies-none-brightgreen.svg)
 
 <img src="demo/terminal.svg" width="660" alt="Terminal session: a four-case sentiment suite scores 0.75 and check reports it steady against its last three runs. A sed command deletes the prompt's 'Answer with one word' line, verify reports the prompt file as changed since the last scored run and exits 1, the re-run scores 0.25, and check prints DROP and SLIDE alarms and exits 1.">
+
+The [fde-agent-skills](https://github.com/eliferres/fde-agent-skills) library documents the working methods behind this tool and its sibling tools as agent skills.
 
 ## What it does
 
